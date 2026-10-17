@@ -197,17 +197,73 @@ document.addEventListener('DOMContentLoaded', () => {
     initChatSystem();
 });
 
-// --- CHAT VARIABLES & FUNCTIONS ---
+// --- CHAT VARIABLES & WEBSOCKET CLIENT ---
 let activeChatId = null;
-let lastMessageId = 0;
-let isPolling = false;
+let wsClient = null;
+let pendingUnreadMsgIds = [];
+let currentSupportName = '';
+
+const studentDB = {
+    '235D150109': 'Đào Quang Tiến',
+    '235D150052': 'Nguyễn Hoàng Nam',
+    '235D160025': 'Đặng Trần Trung',
+    '235D150110': 'Hà Văn Nghị',
+    '235D160028': 'Hà Minh Đức',
+    '235D150115': 'Hoàng Tuấn Ngọc',
+    '245D100088': 'Bùi Nhật Năng'
+};
+
+function getPersonLastName(fullName, userId = '') {
+    let name = fullName || '';
+    if ((!name || name === 'Cán bộ hỗ trợ' || name === 'Hỗ trợ' || name === 'support' || name === 'support_admin') && userId && studentDB[userId]) {
+        name = studentDB[userId];
+    }
+    if (!name || name === 'Cán bộ hỗ trợ' || name === 'Hỗ trợ' || name === 'support' || name === 'support_admin') return 'Hỗ trợ';
+    name = name.replace(/\(.*?\)/g, '').split('-')[0].trim();
+    if (studentDB[name]) name = studentDB[name];
+    const parts = name.split(/\s+/).filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : name;
+}
+
+function setSupportOnline(isOnline, supportName = '', supportId = '') {
+    if (supportName && supportName !== 'Cán bộ hỗ trợ' && supportName !== 'Hỗ trợ' && supportName !== 'support' && supportName !== 'support_admin') {
+        currentSupportName = supportName;
+    }
+    const dot = document.getElementById('support-status-dot');
+    const titleEl = document.getElementById('chat-title');
+    const callName = getPersonLastName(currentSupportName, supportId);
+
+    if (dot) {
+        if (isOnline) {
+            dot.classList.remove('offline');
+            dot.title = (callName !== 'Hỗ trợ' ? callName : 'Người hỗ trợ') + ' đang Online';
+        } else {
+            dot.classList.add('offline');
+            dot.title = (callName !== 'Hỗ trợ' ? callName : 'Người hỗ trợ') + ' đang Offline';
+        }
+    }
+
+    if (titleEl) {
+        if (callName && callName !== 'Hỗ trợ') {
+            titleEl.textContent = callName;
+        } else {
+            titleEl.textContent = 'Hỗ trợ';
+        }
+    }
+}
+
+function markCandidateMessagesRead() {
+    if (!wsClient || !wsClient.isConnected || !activeChatId) return;
+    if (pendingUnreadMsgIds.length === 0) return;
+    const ids = [...pendingUnreadMsgIds];
+    pendingUnreadMsgIds = [];
+    wsClient.markAsRead(activeChatId, ids);
+}
 
 function initChatSystem() {
-    // 1. Check URL for chat_id (Auto attach logic)
     const urlParams = new URLSearchParams(window.location.search);
     const urlChatId = urlParams.get('chat_id');
 
-    // Ưu tiên URL, sau đó đến Session (được truyền từ PHP index.php)
     if (!urlChatId && typeof sessionChatId !== 'undefined' && sessionChatId) {
         activeChatId = sessionChatId;
     }
@@ -215,23 +271,138 @@ function initChatSystem() {
         activeChatId = urlChatId;
     }
 
-    if (activeChatId) {
-        // Auto open popup
-        const popup = document.getElementById('chat-popup');
-        console.log("Init Chat: ActiveChatId =", activeChatId); // Debug ID
-        if(popup) popup.classList.add('active');
-        
-        // Start polling
-        startChatPolling();
+    if (!activeChatId) return;
 
-        // Send System Message (Attach Exam) - Check if already sent in session storage to avoid spam on refresh
-        const sentKey = `chat_joined_${activeChatId}`;
-        if (!sessionStorage.getItem(sentKey)) {
-            const sysMsg = `Hệ thống: Thí sinh ${examInfo.student} (Mã đề: ${examInfo.examId}, Môn: ${examInfo.subject}) đã tham gia.`;
-            sendChatMessageAPI(sysMsg, 'System');
-            sessionStorage.setItem(sentKey, 'true');
+    const popup = document.getElementById('chat-popup');
+    if (popup) {
+        popup.classList.add('active');
+        // Gắn sự kiện tương tác: chỉ khi bấm vào ô chat hoặc gõ chữ mới tính là ĐÃ ĐỌC
+        popup.addEventListener('click', () => markCandidateMessagesRead());
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('focus', () => markCandidateMessagesRead());
+            chatInput.addEventListener('input', () => markCandidateMessagesRead());
         }
     }
+
+    const myName = (typeof currentUser !== 'undefined' ? currentUser : (window.examInfo ? examInfo.student : 'Thí sinh'));
+    const myId = (typeof currentUserId !== 'undefined' ? currentUserId : 'student');
+    const token = (typeof wsToken !== 'undefined' ? wsToken : '');
+    const wsUrl = (typeof wsConfigUrl !== 'undefined' ? wsConfigUrl : 'ws://' + window.location.hostname + ':8085');
+
+    // Khởi tạo kết nối WebSocket Realtime
+    if (typeof HVUWebSocketClient !== 'undefined') {
+        wsClient = new HVUWebSocketClient({
+            url: wsUrl,
+            userId: myId,
+            userName: myName,
+            role: 'exam',
+            chatId: activeChatId,
+            chatName: myName + ' - ' + (window.examInfo ? examInfo.subject : 'Bài thi'),
+            token: token,
+            onAuthSuccess: (data) => {
+                // Kiểm tra ngay cán bộ hỗ trợ có online không từ server
+                if (data.support_online !== undefined) {
+                    setSupportOnline(data.support_online === 1 || data.support_online === true, data.support_name, data.support_id);
+                }
+            },
+            onSupportPresence: (data) => {
+                setSupportOnline(data.is_online === 1 || data.is_online === true, data.support_name, data.support_id);
+            },
+            onNewMessage: (msg) => {
+                renderOneMessage(msg);
+                scrollToBottom();
+                // Nếu tin nhắn từ cán bộ hỗ trợ -> lưu vào danh sách chờ đọc
+                if (msg.sender_id !== myId) {
+                    pendingUnreadMsgIds.push(msg.id);
+                    if (msg.sender_name && (msg.sender_role === 'support' || msg.sender_role === 'admin')) {
+                        setSupportOnline(true, msg.sender_name, msg.sender_id);
+                    }
+                }
+            },
+            onMessageSent: (data) => {
+                updateClientMsgSent(data);
+            },
+            onMsgStatusUpdate: (data) => {
+                updateMsgStatusInDOM(data);
+            },
+            onPresenceUpdate: (data) => {
+                if (data.user_id === 'support_admin' || data.user_id === 'support' || data.role === 'support') {
+                    setSupportOnline(data.is_online === 1, data.user_name || data.name, data.user_id);
+                }
+            },
+            onExamGraded: (data) => {
+                if (data.score !== undefined && data.score !== null) {
+                    activateSubmitWithScore(data.score);
+                }
+            },
+            onHistory: (data) => {
+                const body = document.getElementById('chat-body');
+                if (body && data.messages) {
+                    body.innerHTML = '';
+                    pendingUnreadMsgIds = [];
+                    data.messages.forEach(m => {
+                        renderOneMessage(m);
+                        if (m.sender_id !== myId && m.status !== 'read') {
+                            pendingUnreadMsgIds.push(m.id);
+                        }
+                        if ((m.sender_role === 'support' || m.sender_role === 'admin') && m.sender_name) {
+                            currentSupportName = m.sender_name;
+                        }
+                    });
+                    if (currentSupportName) {
+                        const callName = getPersonLastName(currentSupportName);
+                        if (callName !== 'Hỗ trợ') {
+                            const titleEl = document.getElementById('chat-title');
+                            if (titleEl) titleEl.textContent = callName;
+                        }
+                    }
+                    scrollToBottom();
+                }
+            }
+        });
+
+        if (popup && popup.classList.contains('active')) {
+            wsClient.isChatOpen = true;
+        }
+    }
+
+    // Cơ chế Fallback AJAX: Tự động tải tin nhắn, cập nhật điểm thi và người hỗ trợ định kỳ (mỗi 3.5s)
+    let isCandidatePolling = false;
+    setInterval(() => {
+        if (!activeChatId || isCandidatePolling) return;
+        isCandidatePolling = true;
+        fetch(`index.php?ajax_action=fetch&chat_id=${encodeURIComponent(activeChatId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.status === 'success') {
+                    // Tự động kích hoạt nộp bài kèm điểm số nếu cán bộ hỗ trợ đã chấm điểm
+                    if (data.chat_score !== undefined && data.chat_score !== null && window.finalScore === undefined) {
+                        activateSubmitWithScore(data.chat_score);
+                    }
+                    if (Array.isArray(data.messages)) {
+                        let hasNew = false;
+                        data.messages.forEach(m => {
+                            if (m.id && !document.querySelector(`.chat-msg[data-msg-id="${m.id}"]`)) {
+                                renderOneMessage(m);
+                                hasNew = true;
+                                if (m.sender_id !== myId) {
+                                    pendingUnreadMsgIds.push(m.id);
+                                    if (m.sender_name && (m.sender_role === 'support' || m.sender_role === 'admin')) {
+                                        setSupportOnline(true, m.sender_name, m.sender_id);
+                                    }
+                                }
+                            }
+                        });
+                        if (hasNew) scrollToBottom();
+                    }
+                }
+            })
+            .catch(() => {})
+            .finally(() => {
+                isCandidatePolling = false;
+            });
+    }, 3500);
 }
 
 function toggleChatPopup() {
@@ -239,13 +410,16 @@ function toggleChatPopup() {
     if (!popup) return;
     
     popup.classList.toggle('active');
-    
-    // If opening and we have an ID, ensure polling is running
-    if (popup.classList.contains('active') && activeChatId) {
+    const isOpen = popup.classList.contains('active');
+
+    if (wsClient) {
+        wsClient.isChatOpen = isOpen;
+    }
+
+    if (isOpen) {
         scrollToBottom();
-    } else if (!activeChatId && popup.classList.contains('active')) {
-        // If no chat ID, show a message
-        document.getElementById('chat-body').innerHTML = '<div class="chat-msg system">Chưa kết nối vào phòng chat nào. Vui lòng dùng link được cung cấp.</div>';
+        // Khi người dùng bấm mở popup -> tính là tương tác xem tin nhắn -> đánh dấu đã đọc
+        markCandidateMessagesRead();
     }
 }
 
@@ -254,194 +428,73 @@ function toggleChatPosition() {
     if(popup) popup.classList.toggle('left-side');
 }
 
-function startChatPolling() {
-    if (isPolling) return;
-    isPolling = true;
-    pollMessages();
-}
-
-function requestChatRecovery() {
-    if (!activeChatId) {
-        alert("Chưa có trong phòng chat để thực hiện hành động này.");
-        return;
-    }
-    if (!confirm("Bạn có chắc muốn tạo một đoạn chat mới? Admin sẽ được tự động kết nối lại vào phòng mới.")) {
-        return;
-    }
-    console.log("Manual recovery initiated by student.");
-    // Gọi hàm khôi phục đã có
-    recoverChatSession();
-}
-
-function pollMessages() {
-    if (!activeChatId) {
-        isPolling = false;
-        return;
-    }
-    
-    fetch(`index.php?ajax_action=fetch&chat_id=${activeChatId}&last_id=${lastMessageId}&t=${Date.now()}`)
-        .then(res => res.text()) // Đổi sang text() để xem raw data nếu JSON lỗi
-        .then(text => {
-            // console.log("Raw Response:", text); // Bật dòng này nếu muốn xem toàn bộ text trả về
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                console.error("JSON Parse Error:", e, text);
-                return { status: 'error', message: 'Lỗi dữ liệu từ server (Xem console)' };
-            }
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                // KIỂM TRA LỆNH ĐẶC BIỆT TỪ ADMIN
-                const recoverMsg = data.messages.find(m => m.text === '__RECOVER__');
-                if (recoverMsg) {
-                    console.log("Recovery command received from admin.");
-                    recoverChatSession();
-                    return; // Dừng xử lý chu kỳ này, vì sẽ chuyển sang phòng mới
-                }
-
-                if (data.messages.length > 0) {
-                    console.log("New messages received:", data.messages); // Debug tin nhắn mới
-                    renderMessages(data.messages);
-                    // Update last ID
-                    lastMessageId = data.messages[data.messages.length - 1].id;
-                    scrollToBottom();
-                }
-
-                // Kiểm tra nếu có điểm số từ Admin
-                if (data.chat_score !== null && data.chat_score !== undefined) {
-                    activateSubmitWithScore(data.chat_score);
-                }
-                
-                if(data.chat_status === 'closed') {
-                    document.getElementById('chat-title').textContent = "Chat đã kết thúc";
-                    document.getElementById('chat-input').disabled = true;
-                    isPolling = false;
-                } else {
-                    // Hỏi lại sau 500ms (Short Polling - Realtime)
-                    setTimeout(pollMessages, 3000);
-                }
-            } else if (data.status === 'error') {
-                // Chat deleted or not found
-                console.warn("Chat error detected. Attempting recovery...");
-                recoverChatSession();
-            }
-        })
-        .catch(() => setTimeout(pollMessages, 1000)); // Retry nhanh hơn nếu lỗi mạng
-}
-
-function recoverChatSession() {
-    // Ngừng polling cũ để tránh spam request lỗi
-    isPolling = false;
-
-    const fd = new FormData();
-    fd.append('fullname', examInfo.student);
-    fd.append('subject', examInfo.subject);
-    if (activeChatId) fd.append('old_chat_id', activeChatId);
-
-    fetch('index.php?ajax_action=recover', {
-        method: 'POST',
-        body: fd
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'success') {
-            // 1. Cập nhật ID mới
-            activeChatId = data.new_chat_id;
-            lastMessageId = 0; // Reset ID tin nhắn
-            
-            // 2. Xóa nội dung cũ trên giao diện (hoặc giữ lại tùy ý, ở đây ta xóa để load mới)
-            const body = document.getElementById('chat-body');
-            if(body) body.innerHTML = '';
-
-            // 3. Hiển thị thông báo hệ thống
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-msg system';
-            msgDiv.textContent = "Đã tạo đoạn chat mới do lỗi kết nối.";
-            body.appendChild(msgDiv);
-
-            // 4. Gửi tin nhắn chào lại để Admin biết
-            sendChatMessageAPI(`(Hệ thống: Đã chuyển sang phòng chat mới: ${activeChatId})`, 'System');
-
-            // 5. Tiếp tục polling
-            isPolling = true;
-            pollMessages();
-        } else {
-            alert("Không thể khôi phục kết nối chat. Vui lòng tải lại trang.");
-        }
-    })
-    .catch(err => {
-        console.error("Recovery failed", err);
-        setTimeout(recoverChatSession, 3000); // Thử lại sau 3s
-    });
-}
-
-function activateSubmitWithScore(score) {
-    if (window.finalScore !== undefined) return; // Đã kích hoạt rồi thì thôi
-    
-    window.finalScore = score;
-    const btn = document.getElementById('submit-btn');
-    if (btn) {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-        btn.style.backgroundColor = '#0033cc'; // Đổi màu xanh lá
-        
-        // Hiệu ứng "sáng lên"
-        
-        // Gán sự kiện click mới (ghi đè sự kiện cũ bằng cách clone hoặc gán onclick trực tiếp)
-        btn.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Hiện điểm 5s
-            alert(`BẠN ĐÃ HOÀN THÀNH BÀI THI!\n\nĐIỂM SỐ CỦA BẠN: ${score}\n\nHệ thống sẽ tự động thoát sau 5 giây.`);
-            
-            setTimeout(() => {
-                // Gọi logout ngầm
-                fetch('logout.php').then(() => {
-                    // Thử đóng tab (thường trình duyệt sẽ chặn nếu không phải script mở)
-                    window.close();
-                    // Chuyển hướng đến trang trường
-                    window.location.href = 'https://sinhvien.hvu.edu.vn';
-                });
-            }, 5000);
-        };
-    }
-}
-
-function renderMessages(messages) {
+function renderOneMessage(msg) {
     const body = document.getElementById('chat-body');
-    if (!body) { console.error("Lỗi: Không tìm thấy phần tử #chat-body"); return; }
+    if (!body) return;
+
+    // Tránh render trùng
+    if (msg.id && document.querySelector(`.chat-msg[data-msg-id="${msg.id}"]`)) {
+        return;
+    }
+
+    const myId = (typeof currentUserId !== 'undefined' ? currentUserId : 'student');
+    const myName = (typeof currentUser !== 'undefined' ? currentUser : (window.examInfo ? examInfo.student : 'Thí sinh'));
     
-    messages.forEach(msg => {
-        // Bỏ qua, không hiển thị các tin nhắn lệnh
-        if (msg.text === '__RECOVER__') return;
+    let isMe = (msg.sender_id === myId) || (msg.sender === myName) || (msg.sender_name === myName);
+    let isSystem = (msg.sender_role === 'system') || (msg.sender === 'System');
 
-        const div = document.createElement('div');
-        let type = 'other';
-        
-        // Lấy tên người dùng hiện tại từ biến toàn cục currentUser (được PHP truyền sang)
-        // Nếu không có currentUser thì fallback về examInfo.student
-        const myName = (typeof currentUser !== 'undefined' ? currentUser : examInfo.student);
-        const sender = msg.sender;
-        // console.log(`Render msg: ${msg.text} | Sender: ${sender} | MyName: ${myName}`); // Debug so sánh tên
+    const div = document.createElement('div');
+    div.className = `chat-msg ${isSystem ? 'system' : (isMe ? 'me' : 'other')}`;
+    if (msg.id) div.setAttribute('data-msg-id', msg.id);
 
-        if (sender === 'System') type = 'system';
-        else if (sender === myName) type = 'me'; // Trùng tên Session -> me
-        
-        div.className = `chat-msg ${type}`;
-        
-        // Nếu là tin nhắn của mình (bên phải), không cần hiện tên
-        if (type === 'me') {
-            div.innerHTML = `${msg.text}`;
-        } else {
-            // Tin nhắn người khác hoặc System
-            div.innerHTML = `<strong>${sender === 'System' ? '' : sender + ':'}</strong> ${msg.text}`;
+    const safeText = escapeHtml(msg.text);
+    const timeStr = msg.time || new Date((msg.created_at || Date.now() / 1000) * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const tickHtml = isMe ? getStatusTickHtml(msg.status || 'sent') : '';
+
+    if (isSystem) {
+        div.innerHTML = `${safeText}`;
+    } else if (isMe) {
+        div.innerHTML = `<div>${safeText}</div><div class="msg-meta"><span>${timeStr}</span> <span class="tick-wrap">${tickHtml}</span></div>`;
+    } else {
+        const supName = msg.sender_name || msg.sender || currentSupportName || 'Hỗ trợ';
+        const callName = getPersonLastName(supName, msg.sender_id);
+        if (callName && callName !== 'Hỗ trợ' && (!currentSupportName || currentSupportName === 'Hỗ trợ')) {
+            currentSupportName = supName;
+            const titleEl = document.getElementById('chat-title');
+            if (titleEl) titleEl.textContent = callName;
         }
-        
-        body.appendChild(div);
-    });
+        div.innerHTML = `<div style="font-size:11px; font-weight:bold; color:#003366; margin-bottom:2px;">${escapeHtml(callName)}</div><div>${safeText}</div><div class="msg-meta">${timeStr}</div>`;
+    }
+
+    body.appendChild(div);
+}
+
+function updateClientMsgSent(data) {
+    const body = document.getElementById('chat-body');
+    if (!body) return;
+    if (data.client_msg_id) {
+        const tempNode = document.querySelector(`[data-client-id="${data.client_msg_id}"]`);
+        if (tempNode) {
+            tempNode.setAttribute('data-msg-id', data.msg_id);
+            const tickWrap = tempNode.querySelector('.tick-wrap');
+            if (tickWrap) tickWrap.innerHTML = getStatusTickHtml(data.status);
+            return;
+        }
+    }
+}
+
+function updateMsgStatusInDOM(data) {
+    const status = data.status;
+    if (data.msg_id) {
+        const node = document.querySelector(`.chat-msg[data-msg-id="${data.msg_id}"] .tick-wrap`);
+        if (node) node.innerHTML = getStatusTickHtml(status);
+    }
+    if (data.msg_ids && Array.isArray(data.msg_ids)) {
+        data.msg_ids.forEach(id => {
+            const node = document.querySelector(`.chat-msg[data-msg-id="${id}"] .tick-wrap`);
+            if (node) node.innerHTML = getStatusTickHtml(status);
+        });
+    }
 }
 
 function handleChatKey(e) {
@@ -452,37 +505,55 @@ function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if (!text || !activeChatId) return;
-    
-    sendChatMessageAPI(text, examInfo.student);
-    input.value = '';
+
+    if (wsClient && wsClient.isConnected) {
+        const res = wsClient.sendMessage(text, activeChatId);
+        if (res) {
+            input.value = '';
+            // Render optimistic message locally
+            const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const body = document.getElementById('chat-body');
+            if (body) {
+                const div = document.createElement('div');
+                div.className = 'chat-msg me';
+                div.setAttribute('data-client-id', res.clientMsgId);
+                div.innerHTML = `<div>${escapeHtml(text)}</div><div class="msg-meta"><span>${timeStr}</span> <span class="tick-wrap">${getStatusTickHtml('sent')}</span></div>`;
+                body.appendChild(div);
+                scrollToBottom();
+            }
+        }
+    } else {
+        alert("Kết nối WebSocket đang gián đoạn, đang tự động kết nối lại...");
+    }
 }
 
-function sendChatMessageAPI(text, sender) {
-    const fd = new FormData();
-    fd.append('chat_id', activeChatId);
-    fd.append('text', text);
-    fd.append('sender', sender);
+function activateSubmitWithScore(score) {
+    if (window.finalScore !== undefined) return;
     
-    fetch('index.php?ajax_action=send', {
-        method: 'POST',
-        body: fd
-    }).catch(err => console.error("Send error", err)); // Catch error if network fails
-}
-
-function deleteChat() {
-    if (!activeChatId) return;
-    if (!confirm("Bạn có chắc muốn xóa vĩnh viễn đoạn chat này?")) return;
-
-    const fd = new FormData();
-    fd.append('chat_id', activeChatId);
-    fetch('index.php?ajax_action=delete', { method: 'POST', body: fd })
-        .then(() => {
-            alert("Đã xóa đoạn chat.");
-            location.reload();
-        });
+    window.finalScore = score;
+    const btn = document.getElementById('submit-btn');
+    if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.style.backgroundColor = '#0033cc';
+        
+        btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            alert(`BẠN ĐÃ HOÀN THÀNH BÀI THI!\n\nĐIỂM SỐ CỦA BẠN: ${score}\n\nHệ thống sẽ tự động chuyển về Cổng thông tin sau 5 giây.`);
+            
+            setTimeout(() => {
+                fetch('logout.php').then(() => {
+                    window.location.href = 'portal.php';
+                });
+            }, 5000);
+        };
+    }
 }
 
 function scrollToBottom() {
     const body = document.getElementById('chat-body');
-    body.scrollTop = body.scrollHeight;
+    if (body) body.scrollTop = body.scrollHeight;
 }

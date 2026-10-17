@@ -1,60 +1,56 @@
 <?php
 session_start();
 
-// --- XỬ LÝ AJAX (Chuyển sang ajax_handler.php tập trung) ---
+// --- XỬ LÝ AJAX TẬP TRUNG ---
 if (isset($_GET['ajax_action'])) {
     require_once 'ajax_handler.php';
     exit;
 }
-// --- KẾT THÚC XỬ LÝ AJAX ---
 
-// Lấy danh sách các file .json trong thư mục hiện tại
-$json_files = glob('*.json');
-
-// Xử lý khi form được submit
+// Xử lý khi form đăng nhập được submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once 'config.php'; // Kết nối DB để tạo chat tự động
+    require_once 'config.php';
 
-    $fullname = $_POST['fullname'] ?? '';
-    $student_id = $_POST['student_id'] ?? '';
-    $exam_id = $_POST['exam_id'] ?? '';
-    $subject_file = $_POST['subject_file'] ?? '';
-    $chat_id = $_POST['chat_id'] ?? ''; // Lấy ID chat từ form ẩn
-    $duration = $_POST['duration'] ?? 45; // Mặc định 45 phút
-    $question_limit = $_POST['question_limit'] ?? 30; // Mặc định 30 câu
+    $student_id = trim($_POST['student_id'] ?? '');
+    $fullname = trim($_POST['fullname'] ?? '');
+    $role = $_POST['role'] ?? 'exam'; // 'exam' hoặc 'support'
 
-    if (!empty($fullname) && !empty($student_id) && !empty($exam_id) && !empty($subject_file)) {
+    if (!in_array($role, ['exam', 'support'])) {
+        $role = 'exam';
+    }
+
+    if (!empty($student_id) && !empty($fullname)) {
         // Lưu thông tin vào session
-        $_SESSION['fullname'] = $fullname;
         $_SESSION['student_id'] = $student_id;
-        $_SESSION['exam_id'] = $exam_id;
-        $_SESSION['subject_file'] = $subject_file;
-        $_SESSION['duration'] = $duration;
-        $_SESSION['question_limit'] = $question_limit;
-        $_SESSION['chat_sender'] = $fullname; // Lưu tên người chat vào session
-        if(!empty($chat_id)) $_SESSION['chat_id'] = $chat_id; // Lưu chat ID để index.php mở lại
-        
-        // Nếu chưa có chat ID (chưa tạo nhanh), tự động tạo mới
-        if(empty($chat_id)) {
-            $chat_id = uniqid('chat_');
-            $subject_name = basename($subject_file, '.json');
-            $chat_name = "$fullname - $subject_name"; // Tên chat: Nguyễn Văn A - mang_may_tinh
-            
-            db_insert('chats', [
-                'id' => $chat_id,
-                'name' => $chat_name,
-                'status' => 'waiting',
+        $_SESSION['fullname'] = $fullname;
+        $_SESSION['role'] = $role;
+        $_SESSION['chat_sender'] = $fullname;
+
+        // Sinh token WebSocket an toàn
+        $ws_token = bin2hex(random_bytes(16));
+        $_SESSION['ws_token'] = $ws_token;
+
+        // Lưu token vào bảng user_tokens (cả SQLite/MySQL) để WebSocket Server xác thực
+        try {
+            db_query("DELETE FROM `user_tokens` WHERE `user_id` = ?", [$student_id]);
+            db_insert('user_tokens', [
+                'token' => $ws_token,
+                'user_id' => $student_id,
+                'role' => $role,
+                'chat_id' => null,
                 'created_at' => time()
             ]);
+        } catch (Exception $e) {}
+
+        // Điều hướng theo vai trò
+        if ($role === 'support') {
+            header('Location: dashboard.php');
+        } else {
+            header('Location: portal.php');
         }
-
-        $_SESSION['chat_id'] = $chat_id; // Lưu chat ID để index.php mở lại
-
-        // Chuyển hướng vào trang làm bài
-        header('Location: index.php');
         exit();
     } else {
-        $error = "Vui lòng nhập đầy đủ thông tin!";
+        $error = "Vui lòng nhập mã sinh viên hợp lệ!";
     }
 }
 ?>
@@ -63,141 +59,179 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập hệ thống thi</title>
+    <title>Đăng nhập - Cổng Thi Trực Tuyến HVU</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f1f1f1;
+            background-color: #f4f6f9;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .login-card {
             background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 350px;
+            padding: 35px 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 400px;
         }
-        .login-card h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: #333;
+        .login-header {
             text-align: center;
+            margin-bottom: 25px;
+        }
+        .login-header img {
+            width: 65px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        .login-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #003366;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .login-header p {
+            margin: 6px 0 0 0;
+            font-size: 13px;
+            color: #6c757d;
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
         }
         .form-group input, .form-group select {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
             box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 0 3px rgba(0,86,179,0.1);
         }
         .btn-login {
             width: 100%;
-            padding: 10px;
-            background-color: #0056b3;
+            padding: 12px;
+            background-color: #004085;
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 15px;
             cursor: pointer;
-            margin-top: 10px;
-            font-weight: bold;
+            margin-top: 15px;
+            font-weight: 600;
+            transition: background-color 0.2s;
         }
         .btn-login:hover {
-            background-color: #004494;
+            background-color: #002752;
         }
         .error {
-            color: #dc3545;
-            margin-bottom: 15px;
-            font-size: 14px;
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
             text-align: center;
         }
-        .admin-tools {
-            margin-top: 25px;
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .role-option {
+            flex: 1;
+            text-align: center;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .role-option.active {
+            border-color: #004085;
+            background-color: #e8f0fe;
+            color: #004085;
+            font-weight: 700;
+        }
+        .footer-note {
+            margin-top: 20px;
             padding-top: 15px;
             border-top: 1px solid #eee;
             text-align: center;
-            font-size: 13px;
-        }
-        .admin-tools a, .admin-tools button {
-            color: #666;
-            text-decoration: none;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-        .admin-tools a:hover, .admin-tools button:hover {
-            color: #0056b3;
-            text-decoration: underline;
+            font-size: 12px;
+            color: #888;
         }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h2>Thông tin thí sinh</h2>
+        <div class="login-header">
+            <img src="img/logo.png" alt="Logo HVU" onerror="this.style.display='none'">
+            <h2>CỔNG THI TRỰC TUYẾN</h2>
+            <p>Hệ thống Khảo thí & Đánh giá Năng lực</p>
+        </div>
+
         <?php if(isset($error)) echo "<p class='error'>$error</p>"; ?>
+
         <form method="POST" action="">
             <div class="form-group">
-                <label>Mã sinh viên</label>
-                <input type="text" name="student_id" id="student_id" required placeholder="Nhập mã sinh viên" oninput="lookupStudent()" autocomplete="off">
+                <label>Mã sinh viên / Tài khoản</label>
+                <input type="text" name="student_id" id="student_id" required placeholder="Nhập mã (VD: 235D150109 hoặc 235D150052)" oninput="lookupStudent()" autocomplete="off">
             </div>
+
             <div class="form-group">
-                <label>Họ và tên</label>
-                <input type="text" id="fullname_display" readonly placeholder="Tự động điền khi nhập đúng mã SV" style="background: #f5f5f5; color: #555;">
+                <label>Họ và tên thí sinh</label>
+                <input type="text" id="fullname_display" readonly placeholder="Tự động điền theo mã sinh viên" style="background: #f8f9fa; color: #495057;">
                 <input type="hidden" name="fullname" id="fullname">
             </div>
+
             <div class="form-group">
-                <label>Mã bài thi</label>
-                <input type="text" name="exam_id" required placeholder="Nhập mã bài thi">
+                <label>Vai trò truy cập</label>
+                <input type="hidden" name="role" id="selected_role" value="exam">
+                <div class="role-selector">
+                    <div class="role-option active" id="role-exam" onclick="selectRole('exam')">
+                        📝 Thí sinh (Thi)
+                    </div>
+                    <div class="role-option" id="role-support" onclick="selectRole('support')">
+                        🛠️ Cán bộ hỗ trợ
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Môn thi</label>
-                <select name="subject_file" required>
-                    <?php foreach ($json_files as $file): ?>
-                        <option value="<?php echo htmlspecialchars($file); ?>"><?php echo htmlspecialchars(basename($file, '.json')); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Thời gian làm bài (phút)</label>
-                <input type="number" name="duration" value="60" min="1" required placeholder="Nhập số phút">
-            </div>
-            <div class="form-group">
-                <label>Số lượng câu hỏi</label>
-                <input type="number" name="question_limit" value="40" min="1" max="60" required placeholder="Nhập số lượng câu (VD: 60)">
-            </div>
-            <!-- Input ẩn để lưu ID chat nếu đã tạo -->
-            <input type="hidden" name="chat_id" id="hidden_chat_id">
-            <button type="submit" class="btn-login">Vào thi</button>
+
+            <button type="submit" class="btn-login" id="btn-submit">Đăng nhập</button>
         </form>
 
-        <!-- Khu vực dành cho Admin -->
-        <div class="admin-tools">
-            <a href="dashboard.php" target="_blank">Admin Dashboard</a>
-            <span style="margin: 0 5px; color: #ccc;">|</span>
-            <button type="button" onclick="quickCreateChat()">Tạo Chat Nhanh</button>
+        <div class="footer-note">
+            Đại học Hùng Vương &bull; Hệ thống Demo Khảo Thí
         </div>
     </div>
 
-    <!-- Include Chat Popup -->
-    <?php include 'chat_popup.php'; ?>
-
     <script>
-        // Danh sách sinh viên (mã SV -> tên) - so sánh không phân biệt hoa thường
+        // Danh bạ sinh viên được hỗ trợ
         const studentDB = {
             '235D150109': 'Đào Quang Tiến',
+            '235D150052': 'Nguyễn Hoàng Nam',
             '235D160025': 'Đặng Trần Trung',
             '235D150110': 'Hà Văn Nghị',
             '235D160028': 'Hà Minh Đức',
@@ -213,263 +247,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (studentDB[input]) {
                 displayEl.value = studentDB[input];
                 hiddenEl.value = studentDB[input];
-                displayEl.style.color = '#28a745';
+                displayEl.style.color = '#198754';
+                displayEl.style.fontWeight = '600';
+            } else if (input.length >= 3) {
+                // Cho phép nhập tự do nếu là tài khoản hỗ trợ/mã khác
+                displayEl.value = 'Thí sinh ' + input;
+                hiddenEl.value = 'Thí sinh ' + input;
+                displayEl.style.color = '#495057';
+                displayEl.style.fontWeight = 'normal';
             } else {
                 displayEl.value = '';
                 hiddenEl.value = '';
-                displayEl.style.color = '#555';
+                displayEl.style.color = '#495057';
             }
         }
 
-        let activeChatId = null;
-        let lastMessageId = 0;
-        let isPolling = false;
-        let currentChatName = ""; // Lưu tên chat để tìm lại nếu mất kết nối
-        
-        // TẠO SESSION NGẪU NHIÊN CHO ADMIN (Lưu vào sessionStorage của trình duyệt)
-        // Giúp tách biệt hoàn toàn với session của Sinh viên khi test trên cùng máy
-        let currentUser = sessionStorage.getItem('dashboard_user');
-        if (!currentUser) {
-            // Tạo tên ngẫu nhiên: Support_ + 4 ký tự cuối của thời gian
-            currentUser = 'Support_' + Date.now().toString().slice(-4);
-            sessionStorage.setItem('dashboard_user', currentUser);
-        }
-
-        function quickCreateChat() {
-            const name = prompt("Nhập tên gợi nhớ cho phòng chat (VD: Phòng thi 01):");
-            if (!name) return;
-
-            const formData = new FormData();
-            formData.append('name', name);
-
-            fetch('login.php?ajax_action=create', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.text()) // Đổi sang text() để kiểm tra lỗi PHP nếu có
-            .then(text => {
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    console.error("Server Error Response:", text);
-                    throw new Error("Lỗi dữ liệu từ server (Xem console để biết chi tiết)");
-                }
-            })
-            .then(data => {
-                if(data.status === 'success') {
-                    activeChatId = data.chat_id;
-                    currentChatName = name; // Lưu tên
-                    document.getElementById('hidden_chat_id').value = activeChatId; // Gán vào form
-                    document.getElementById('chat-title').textContent = name;
-                    toggleChatPopup(true);
-                    startChatPolling();
-                } else {
-                    alert("Lỗi: " + (data.message || 'Không thể tạo chat'));
-                }
-            })
-            .catch(err => alert("Lỗi: " + err.message));
-        }
-
-        function requestChatRecovery() {
-            if (!activeChatId) {
-                alert("Vui lòng chọn một cuộc trò chuyện trước khi tạo mới.");
-                return;
-            }
-            if (!confirm("Bạn có chắc muốn tạo một đoạn chat mới và kéo sinh viên sang? Đoạn chat cũ sẽ bị ngắt kết nối.")) {
-                return;
-            }
-
-            // 1. Gửi một tin nhắn lệnh đặc biệt để kích hoạt client của sinh viên
-            const fd = new FormData();
-            fd.append('chat_id', activeChatId);
-            fd.append('text', '__RECOVER__'); // Lệnh đặc biệt
-            fd.append('sender', 'System');
+        function selectRole(role) {
+            document.getElementById('selected_role').value = role;
+            document.getElementById('role-exam').classList.toggle('active', role === 'exam');
+            document.getElementById('role-support').classList.toggle('active', role === 'support');
             
-            fetch('login.php?ajax_action=send', {
-                method: 'POST',
-                body: fd
-            }).then(() => {
-                // 2. Ngay lập tức bắt đầu tìm kiếm phòng chat thay thế
-                console.log("Recovery command sent. Admin is now attempting to reconnect...");
-                const body = document.getElementById('chat-body');
-                if(body) body.innerHTML += '<div class="chat-msg system">Đã gửi yêu cầu tạo chat mới. Đang chờ kết nối lại...</div>';
-                // Hàm này đã có sẵn, sẽ lặp lại cho đến khi tìm thấy phòng mới
-                attemptReconnect();
-            }).catch(err => alert("Không thể gửi yêu cầu tạo chat mới. Lỗi: " + err));
-        }
-
-        function toggleChatPopup(forceOpen = false) {
-            const popup = document.getElementById('chat-popup');
-            if (forceOpen) popup.classList.add('active');
-            else popup.classList.toggle('active');
-        }
-
-        function copyLink() {
-            if(!activeChatId) return;
-            const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-            const link = `${baseUrl}/index.php?chat_id=${activeChatId}`;
-            navigator.clipboard.writeText(link).then(() => alert('Đã copy link! Gửi cho thí sinh để bắt đầu.'));
-        }
-
-        function startChatPolling() {
-            if (isPolling) return;
-            isPolling = true;
-            pollMessages();
-        }
-
-        function pollMessages() {
-            if (!activeChatId) { isPolling = false; return; }
-            
-            fetch(`login.php?ajax_action=fetch&chat_id=${activeChatId}&last_id=${lastMessageId}&t=${Date.now()}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'error') {
-                        console.warn("Chat deleted or error. Attempting reconnect...");
-                        attemptReconnect();
-                        return;
-                    }
-
-                    // Nếu chat bị vô hiệu hóa (do user tạo mới), tự động tìm chat thay thế
-                    if (data.chat_status === 'disabled') {
-                        console.warn("Chat disabled. Switching to new session...");
-                        attemptReconnect();
-                        return;
-                    }
-
-                    if (data.status === 'success' && data.messages.length > 0) {
-                        renderMessages(data.messages);
-                        lastMessageId = data.messages[data.messages.length - 1].id;
-                    }
-                    if (data.chat_status !== 'closed') setTimeout(pollMessages, 3000); // 3s polling
-                })
-                .catch(err => {
-                    console.error("Polling error", err);
-                    // Nếu lỗi mạng hoặc lỗi server, thử tìm phòng thay thế
-                    if (activeChatId) attemptReconnect();
-                });
-        }
-
-        function attemptReconnect() {
-            isPolling = false;
-            const fd = new FormData();
-            fd.append('old_chat_id', activeChatId);
-            fd.append('chat_name', currentChatName); // Dùng tên để tìm
-
-            fetch('login.php?ajax_action=find_replacement', {
-                method: 'POST',
-                body: fd
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    console.log("Found replacement chat:", data.new_chat_id);
-                    activeChatId = data.new_chat_id;
-                    lastMessageId = 0; // Reset để load lại từ đầu
-                    
-                    const body = document.getElementById('chat-body');
-                    body.innerHTML += '<div class="chat-msg system">Đã chuyển sang đoạn chat mới do lỗi kết nối.</div>';
-                    
-                    isPolling = true;
-                    pollMessages();
-                } else {
-                    // Chưa tìm thấy, thử lại sau 2s
-                    setTimeout(attemptReconnect, 2000);
-                }
-            })
-            .catch(() => setTimeout(attemptReconnect, 2000));
-        }
-
-        function renderMessages(messages) {
-            const body = document.getElementById('chat-body');
-            messages.forEach(msg => {
-                // Bỏ qua, không hiển thị các tin nhắn lệnh
-                if (msg.text === '__RECOVER__') return;
-
-                const div = document.createElement('div');
-                // Ở đây người tạo là Support/Admin
-                const sender = msg.sender;
-                let type = 'other';
-
-                // So sánh với currentUser (được lấy từ sessionStorage)
-                if (sender === currentUser) {
-                    type = 'me';
-                }
-                
-                div.className = `chat-msg ${type}`;
-                
-                if (type === 'me') {
-                    div.innerHTML = `${msg.text}`;
-                } else {
-                    div.innerHTML = `<strong>${sender}</strong>: ${msg.text}`;
-                }
-                
-                body.appendChild(div);
-            });
-            body.scrollTop = body.scrollHeight;
-        }
-
-        // --- HÀM CHẤM ĐIỂM (Mới) ---
-        function finishExam() {
-            if (!activeChatId) return;
-            const score = prompt("Nhập điểm số cho bài thi này (0-10):");
-            if (score === null || score.trim() === "") return;
-
-            const fd = new FormData();
-            fd.append('chat_id', activeChatId);
-            fd.append('score', score);
-
-            fetch('login.php?ajax_action=update_score', {
-                method: 'POST',
-                body: fd
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    alert("Đã chấm điểm thành công! Sinh viên có thể xem kết quả.");
-                    // Gửi tin nhắn hệ thống báo đã chấm
-                    const input = document.getElementById('chat-input');
-                    input.value = "Giám thị đã chấm điểm bài thi.";
-                    sendChatMessage();
-                } else {
-                    alert("Lỗi khi cập nhật điểm.");
-                }
-            });
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text || !activeChatId) return;
-
-            // Clear input immediately
-            input.value = '';
-
-            const fd = new FormData();
-            fd.append('chat_id', activeChatId);
-            fd.append('text', text);
-            fd.append('sender', currentUser); // Gửi kèm session ID ngẫu nhiên
-
-            fetch('login.php?ajax_action=send', {
-                method: 'POST',
-                body: fd
-            }).catch(err => console.error("Send error", err));
-        }
-
-        function handleChatKey(e) {
-            if (e.key === 'Enter') sendChatMessage();
-        }
-
-        function deleteChat() {
-            if (!activeChatId) return;
-            if (!confirm("Xóa đoạn chat này?")) return;
-
-            const fd = new FormData();
-            fd.append('chat_id', activeChatId);
-            fetch('login.php?ajax_action=delete', { method: 'POST', body: fd })
-                .then(() => {
-                    activeChatId = null;
-                    toggleChatPopup(false);
-                });
+            const btn = document.getElementById('btn-submit');
+            if (role === 'support') {
+                btn.textContent = 'Vào Dashboard Hỗ trợ';
+                btn.style.backgroundColor = '#495057';
+            } else {
+                btn.textContent = 'Đăng nhập vào Cổng thi';
+                btn.style.backgroundColor = '#004085';
+            }
         }
     </script>
 </body>

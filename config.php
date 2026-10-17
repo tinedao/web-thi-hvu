@@ -1,21 +1,43 @@
 <?php
+// config.php - Cấu hình cơ sở dữ liệu (MySQL chính + SQLite dự phòng & Chat SQLite)
+
 $db_host = 'localhost';
 $db_user = 'root';
 $db_pass = '1234';
 $db_name = 'ktra';
 
+// Kết nối cơ sở dữ liệu chính (MySQL, fallback sang SQLite nếu MySQL không khả dụng)
 try {
-    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass, [
+        PDO::ATTR_TIMEOUT => 2,
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
 } catch (PDOException $e) {
-    // Nếu là request AJAX thì trả về JSON lỗi
-    if (isset($_GET['ajax_action'])) {
-        if (!headers_sent()) header('Content-Type: application/json');
-        echo json_encode(['status' => 'error', 'message' => 'Lỗi kết nối DB: ' . $e->getMessage()]);
-        exit;
-    } else {
-        die("Lỗi kết nối cơ sở dữ liệu: " . $e->getMessage());
+    // Fallback an toàn sang SQLite cục bộ nếu MySQL chưa bật
+    $sqlite_file = __DIR__ . '/data/exam_system.sqlite';
+    try {
+        $pdo = new PDO("sqlite:" . $sqlite_file);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch (PDOException $se) {
+        if (isset($_GET['ajax_action'])) {
+            if (!headers_sent()) header('Content-Type: application/json');
+            echo json_encode(['status' => 'error', 'message' => 'Lỗi kết nối DB: ' . $se->getMessage()]);
+            exit;
+        } else {
+            die("Lỗi kết nối cơ sở dữ liệu: " . $se->getMessage());
+        }
     }
+}
+
+// Hàm lấy kết nối SQLite riêng cho Chat (data/chat.sqlite)
+function get_chat_db() {
+    static $chat_pdo = null;
+    if ($chat_pdo === null) {
+        $chat_file = __DIR__ . '/data/chat.sqlite';
+        $chat_pdo = new PDO("sqlite:" . $chat_file);
+        $chat_pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }
+    return $chat_pdo;
 }
 
 // --- CÁC HÀM HỖ TRỢ CRUD ---

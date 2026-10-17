@@ -30,12 +30,19 @@ $elapsed = time() - $_SESSION['exam_start_time'];
 $remaining_seconds = max(0, $duration_seconds - $elapsed);
 
 // 1. LOAD DỮ LIỆU TỪ PHP (Server-Side)
-$subject_file = $_SESSION['subject_file'] ?? 'mang_may_tinh.json';
-if (!file_exists($subject_file)) {
-    $subject_file = 'mang_may_tinh.json';
+$subject_file = $_SESSION['subject_file'] ?? 'dau_tu_chung_khoan.json';
+$resolved_file = null;
+if (file_exists(__DIR__ . '/exams/' . basename($subject_file))) {
+    $resolved_file = __DIR__ . '/exams/' . basename($subject_file);
+} elseif (file_exists(__DIR__ . '/' . basename($subject_file))) {
+    $resolved_file = __DIR__ . '/' . basename($subject_file);
+} else {
+    $examFiles = glob(__DIR__ . '/exams/*.json');
+    if (!empty($examFiles)) $resolved_file = $examFiles[0];
 }
-$json_data = file_get_contents($subject_file);
-$questions = json_decode($json_data, true);
+
+$json_data = $resolved_file ? file_get_contents($resolved_file) : '[]';
+$questions = json_decode($json_data, true) ?: [];
 
 // Cắt danh sách câu hỏi theo số lượng đã chọn (30 hoặc 40)
 $limit = isset($_SESSION['question_limit']) ? (int)$_SESSION['question_limit'] : 30;
@@ -175,6 +182,9 @@ $current_q = $questions[$current_index];
         let currentQuestionIndex = <?php echo $current_index; ?>;
         const sessionChatId = "<?php echo $_SESSION['chat_id'] ?? ''; ?>"; // Lấy ID chat từ session
         const currentUser = "<?php echo htmlspecialchars($_SESSION['chat_sender']); ?>"; // Biến định danh người chat hiện tại
+        const currentUserId = "<?php echo htmlspecialchars($_SESSION['student_id']); ?>";
+        const wsToken = "<?php echo htmlspecialchars($_SESSION['ws_token'] ?? ''); ?>";
+        const wsConfigUrl = "<?php $wsc = require 'websocket_config.php'; echo $wsc['client_url']; ?>";
         
         // Thông tin cho Chat System Message
         const examInfo = {
@@ -184,6 +194,7 @@ $current_q = $questions[$current_index];
         };
     </script>
 
+    <script src="websocket-client.js?v=<?php echo time(); ?>"></script>
     <script src="script.js?v=<?php echo time(); ?>"></script>
     <script>
         // Hàm đếm ngược thời gian

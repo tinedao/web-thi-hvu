@@ -22,6 +22,20 @@ $checks = [
         'ini' => 'extension=pdo_mysql'
     ],
     [
+        'name' => 'pdo_sqlite',
+        'type' => 'extension',
+        'required' => true,
+        'desc' => 'PDO SQLite Driver - Kết nối SQLite dự phòng và Chat',
+        'ini' => 'extension=pdo_sqlite'
+    ],
+    [
+        'name' => 'sqlite3',
+        'type' => 'extension',
+        'required' => true,
+        'desc' => 'SQLite3 Extension - Xử lý SQLite trực tiếp',
+        'ini' => 'extension=sqlite3'
+    ],
+    [
         'name' => 'mysqli',
         'type' => 'extension',
         'required' => false,

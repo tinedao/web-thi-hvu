@@ -1,0 +1,28 @@
+{
+  "name": "sinhvien",
+  "version": "1.0.0",
+  "description": "Hệ thống mô phỏng cổng thi trắc nghiệm trực tuyến kết hợp WebSocket Realtime Chat và SQLite",
+  "main": "websocket-server.js",
+  "scripts": {
+    "start": "node websocket-server.js",
+    "clean": "node scripts/clean-chat.js",
+    "test": "node scripts/test_system.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tinedao/web-thi-hvu.git"
+  },
+  "keywords": [
+    "websocket",
+    "sqlite",
+    "php",
+    "exam"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "sqlite3": "^6.0.1",
+    "ws": "^8.22.0"
+  }
+}
