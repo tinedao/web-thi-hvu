@@ -1,0 +1,1382 @@
+[
+  {
+    "id": 1,
+    "question": "Đầu tư chứng khoán là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Gửi tiền tiết kiệm"
+      },
+      {
+        "id": "B",
+        "text": "Mua bán tài sản tài chính để sinh lời"
+      },
+      {
+        "id": "C",
+        "text": "Cho vay ngân hàng"
+      },
+      {
+        "id": "D",
+        "text": "Kinh doanh bất động sản"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 2,
+    "question": "Thị trường chứng khoán hoạt động theo nguyên tắc nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cung – cầu"
+      },
+      {
+        "id": "B",
+        "text": "Bao cấp"
+      },
+      {
+        "id": "C",
+        "text": "Kế hoạch hóa"
+      },
+      {
+        "id": "D",
+        "text": "Độc quyền giá"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 3,
+    "question": "Nhà đầu tư cá nhân là ai?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Doanh nghiệp lớn"
+      },
+      {
+        "id": "B",
+        "text": "Ngân hàng trung ương"
+      },
+      {
+        "id": "C",
+        "text": "Cá nhân tự bỏ vốn đầu tư"
+      },
+      {
+        "id": "D",
+        "text": "Công ty chứng khoán"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 4,
+    "question": "Lợi nhuận trong đầu tư cổ phiếu đến từ đâu?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cổ tức và chênh lệch giá"
+      },
+      {
+        "id": "B",
+        "text": "Lãi suất ngân hàng"
+      },
+      {
+        "id": "C",
+        "text": "Phí môi giới"
+      },
+      {
+        "id": "D",
+        "text": "Thuế thu nhập"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 5,
+    "question": "Rủi ro lớn nhất khi đầu tư chứng khoán là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mất thanh khoản"
+      },
+      {
+        "id": "B",
+        "text": "Biến động giá"
+      },
+      {
+        "id": "C",
+        "text": "Lạm phát"
+      },
+      {
+        "id": "D",
+        "text": "Tỷ giá"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 6,
+    "question": "Phân tích cơ bản tập trung vào yếu tố nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giá và khối lượng"
+      },
+      {
+        "id": "B",
+        "text": "Doanh nghiệp và tài chính"
+      },
+      {
+        "id": "C",
+        "text": "Tâm lý thị trường"
+      },
+      {
+        "id": "D",
+        "text": "Mô hình giá"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 7,
+    "question": "Báo cáo tài chính KHÔNG bao gồm?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Bảng cân đối kế toán"
+      },
+      {
+        "id": "B",
+        "text": "Báo cáo KQKD"
+      },
+      {
+        "id": "C",
+        "text": "Báo cáo lưu chuyển tiền tệ"
+      },
+      {
+        "id": "D",
+        "text": "Báo cáo phân tích kỹ thuật"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 8,
+    "question": "Giá tham chiếu là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giá cao nhất phiên"
+      },
+      {
+        "id": "B",
+        "text": "Giá đóng cửa phiên trước"
+      },
+      {
+        "id": "C",
+        "text": "Giá thấp nhất phiên"
+      },
+      {
+        "id": "D",
+        "text": "Giá dự đoán"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 9,
+    "question": "Phí giao dịch chứng khoán là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Thuế nhà nước"
+      },
+      {
+        "id": "B",
+        "text": "Chi phí trả cho công ty chứng khoán"
+      },
+      {
+        "id": "C",
+        "text": "Lãi vay margin"
+      },
+      {
+        "id": "D",
+        "text": "Cổ tức"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 10,
+    "question": " Danh mục đầu tư là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Một mã cổ phiếu"
+      },
+      {
+        "id": "B",
+        "text": "Tập hợp các tài sản đầu tư"
+      },
+      {
+        "id": "C",
+        "text": "Một ngành nghề"
+      },
+      {
+        "id": "D",
+        "text": "Một sàn giao dịch"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 11,
+    "question": " Đầu tư dài hạn thường dựa vào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tin đồn"
+      },
+      {
+        "id": "B",
+        "text": "Biểu đồ phút"
+      },
+      {
+        "id": "C",
+        "text": "Nền tảng doanh nghiệp"
+      },
+      {
+        "id": "D",
+        "text": "Tâm lý đám đông"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 12,
+    "question": " Giá trần là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giá cao nhất được phép giao dịch"
+      },
+      {
+        "id": "B",
+        "text": "Giá thấp nhất"
+      },
+      {
+        "id": "C",
+        "text": "Giá tham chiếu"
+      },
+      {
+        "id": "D",
+        "text": "Giá dự kiến"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 13,
+    "question": " Giá sàn là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giá thấp nhất được phép giao dịch"
+      },
+      {
+        "id": "B",
+        "text": "Giá cao nhất"
+      },
+      {
+        "id": "C",
+        "text": "Giá mở cửa"
+      },
+      {
+        "id": "D",
+        "text": "Giá bình quân"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 14,
+    "question": " Thị trường thứ cấp là nơi?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Phát hành cổ phiếu lần đầu"
+      },
+      {
+        "id": "B",
+        "text": "Mua bán chứng khoán đã phát hành"
+      },
+      {
+        "id": "C",
+        "text": "Giao dịch nội bộ"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ giao dịch trái phiếu"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 15,
+    "question": " Cổ phiếu tăng giá khi?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cung lớn hơn cầu"
+      },
+      {
+        "id": "B",
+        "text": "Cầu lớn hơn cung"
+      },
+      {
+        "id": "C",
+        "text": "Không có giao dịch"
+      },
+      {
+        "id": "D",
+        "text": "Thị trường đóng cửa"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 16,
+    "question": " Nhà đầu tư tổ chức là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Sinh viên"
+      },
+      {
+        "id": "B",
+        "text": "Quỹ đầu tư, ngân hàng"
+      },
+      {
+        "id": "C",
+        "text": "Nhà đầu tư F0"
+      },
+      {
+        "id": "D",
+        "text": "Cá nhân nhỏ lẻ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 17,
+    "question": " Thị trường giảm mạnh kéo dài gọi là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Bull Market"
+      },
+      {
+        "id": "B",
+        "text": "Bear Market"
+      },
+      {
+        "id": "C",
+        "text": "Sideway"
+      },
+      {
+        "id": "D",
+        "text": "Uptrend"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 18,
+    "question": " Tâm lý bầy đàn là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Đầu tư theo phân tích"
+      },
+      {
+        "id": "B",
+        "text": "Mua bán theo đám đông"
+      },
+      {
+        "id": "C",
+        "text": "Đầu tư dài hạn"
+      },
+      {
+        "id": "D",
+        "text": "Quản trị rủi ro"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 19,
+    "question": " Quản trị rủi ro giúp?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tránh mọi thua lỗ"
+      },
+      {
+        "id": "B",
+        "text": "Giảm thiểu thiệt hại"
+      },
+      {
+        "id": "C",
+        "text": "Tăng phí giao dịch"
+      },
+      {
+        "id": "D",
+        "text": "Không cần phân tích"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 20,
+    "question": " Mục tiêu chính của đầu tư là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giải trí"
+      },
+      {
+        "id": "B",
+        "text": "Sinh lời và bảo toàn vốn"
+      },
+      {
+        "id": "C",
+        "text": "Theo phong trào"
+      },
+      {
+        "id": "D",
+        "text": "Đánh bạc"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 21,
+    "question": " Đầu tư theo giá trị tập trung vào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Doanh nghiệp bị định giá thấp"
+      },
+      {
+        "id": "B",
+        "text": "Cổ phiếu tăng nóng"
+      },
+      {
+        "id": "C",
+        "text": "Tin đồn"
+      },
+      {
+        "id": "D",
+        "text": "Lướt sóng"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 22,
+    "question": " Đầu tư tăng trưởng ưu tiên?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cổ tức cao"
+      },
+      {
+        "id": "B",
+        "text": "Doanh nghiệp tăng trưởng nhanh"
+      },
+      {
+        "id": "C",
+        "text": "Giá thấp"
+      },
+      {
+        "id": "D",
+        "text": "Thanh khoản thấp"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 23,
+    "question": " Biểu đồ nến dùng để?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Xem báo cáo tài chính"
+      },
+      {
+        "id": "B",
+        "text": "Phân tích biến động giá"
+      },
+      {
+        "id": "C",
+        "text": "Tính cổ tức"
+      },
+      {
+        "id": "D",
+        "text": "Tính thuế"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 24,
+    "question": " Khối lượng giao dịch phản ánh?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mức độ quan tâm của thị trường"
+      },
+      {
+        "id": "B",
+        "text": "Lợi nhuận doanh nghiệp"
+      },
+      {
+        "id": "C",
+        "text": "Cổ tức"
+      },
+      {
+        "id": "D",
+        "text": "Giá trị sổ sách"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 25,
+    "question": " Thua lỗ lớn thường do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Kỷ luật kém"
+      },
+      {
+        "id": "B",
+        "text": "Quản trị vốn tốt"
+      },
+      {
+        "id": "C",
+        "text": "Phân tích kỹ"
+      },
+      {
+        "id": "D",
+        "text": "Kiên nhẫn"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 26,
+    "question": " Đầu tư không nên dựa vào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Kế hoạch rõ ràng"
+      },
+      {
+        "id": "B",
+        "text": "Tin đồn thất thiệt"
+      },
+      {
+        "id": "C",
+        "text": "Phân tích"
+      },
+      {
+        "id": "D",
+        "text": "Chiến lược"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 27,
+    "question": " Tỷ suất sinh lời là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mức lợi nhuận thu được so với vốn đầu tư"
+      },
+      {
+        "id": "B",
+        "text": "Phí giao dịch"
+      },
+      {
+        "id": "C",
+        "text": "Thuế"
+      },
+      {
+        "id": "D",
+        "text": "Lãi vay"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 28,
+    "question": " Nhà đầu tư thành công cần?",
+    "options": [
+      {
+        "id": "A",
+        "text": "May mắn"
+      },
+      {
+        "id": "B",
+        "text": "Kỷ luật và kiến thức"
+      },
+      {
+        "id": "C",
+        "text": "Theo đám đông"
+      },
+      {
+        "id": "D",
+        "text": "Đánh nhanh thắng nhanh"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 29,
+    "question": " Đầu tư chứng khoán phù hợp với ai?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Người có kế hoạch tài chính"
+      },
+      {
+        "id": "B",
+        "text": "Người thích đánh bạc"
+      },
+      {
+        "id": "C",
+        "text": "Người không chấp nhận rủi ro"
+      },
+      {
+        "id": "D",
+        "text": "Người vay toàn bộ vốn"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 30,
+    "question": " Thị trường đi ngang gọi là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Uptrend"
+      },
+      {
+        "id": "B",
+        "text": "Downtrend"
+      },
+      {
+        "id": "C",
+        "text": "Sideway"
+      },
+      {
+        "id": "D",
+        "text": "Breakout"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 31,
+    "question": " Breakout là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giá phá vỡ vùng cản quan trọng"
+      },
+      {
+        "id": "B",
+        "text": "Giá đi ngang"
+      },
+      {
+        "id": "C",
+        "text": "Giá giảm nhẹ"
+      },
+      {
+        "id": "D",
+        "text": "Không có giao dịch"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 32,
+    "question": " Cổ tức tiền mặt là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cổ phiếu thưởng"
+      },
+      {
+        "id": "B",
+        "text": "Tiền mặt chia cho cổ đông"
+      },
+      {
+        "id": "C",
+        "text": "Lợi nhuận giữ lại"
+      },
+      {
+        "id": "D",
+        "text": "Phí giao dịch"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 33,
+    "question": " Đòn bẩy tài chính làm?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giảm rủi ro"
+      },
+      {
+        "id": "B",
+        "text": "Tăng cả lợi nhuận và rủi ro"
+      },
+      {
+        "id": "C",
+        "text": "Không ảnh hưởng"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ tăng lợi nhuận"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 34,
+    "question": " Vốn nhàn rỗi là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tiền cần dùng gấp"
+      },
+      {
+        "id": "B",
+        "text": "Tiền có thể đầu tư dài hạn"
+      },
+      {
+        "id": "C",
+        "text": "Tiền vay"
+      },
+      {
+        "id": "D",
+        "text": "Tiền chi tiêu hàng ngày"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 35,
+    "question": " Nguyên tắc vàng trong đầu tư là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All-in một mã"
+      },
+      {
+        "id": "B",
+        "text": "Không bỏ trứng vào một giỏ"
+      },
+      {
+        "id": "C",
+        "text": "Theo tin đồn"
+      },
+      {
+        "id": "D",
+        "text": "Dùng margin tối đa"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 36,
+    "question": " Lợi nhuận cao thường đi kèm?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rủi ro cao"
+      },
+      {
+        "id": "B",
+        "text": "Rủi ro thấp"
+      },
+      {
+        "id": "C",
+        "text": "Không rủi ro"
+      },
+      {
+        "id": "D",
+        "text": "Không cần phân tích"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 37,
+    "question": " Chiến lược đầu tư giúp?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giảm cảm xúc khi giao dịch"
+      },
+      {
+        "id": "B",
+        "text": "Mua bán theo hứng"
+      },
+      {
+        "id": "C",
+        "text": "Tăng rủi ro"
+      },
+      {
+        "id": "D",
+        "text": "Không cần quản lý vốn"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 38,
+    "question": " Tâm lý sợ hãi thường dẫn đến?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Bán tháo"
+      },
+      {
+        "id": "B",
+        "text": "Mua thêm"
+      },
+      {
+        "id": "C",
+        "text": "Giữ kỷ luật"
+      },
+      {
+        "id": "D",
+        "text": "Phân tích kỹ hơn"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 39,
+    "question": " Tâm lý tham lam thường khiến?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Chốt lời sớm"
+      },
+      {
+        "id": "B",
+        "text": "Giữ cổ phiếu quá lâu"
+      },
+      {
+        "id": "C",
+        "text": "Quản trị rủi ro tốt"
+      },
+      {
+        "id": "D",
+        "text": "Giảm margin"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 40,
+    "question": " Kiến thức đầu tư nên?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Học một lần là đủ"
+      },
+      {
+        "id": "B",
+        "text": "Cập nhật liên tục"
+      },
+      {
+        "id": "C",
+        "text": "Không cần học"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ nghe môi giới"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 41,
+    "question": " Chỉ số EPS (Earnings Per Share) được tính như thế nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "(Lợi nhuận sau thuế - Cổ tức ưu đãi) / Số lượng cổ phiếu lưu hành"
+      },
+      {
+        "id": "B",
+        "text": "Doanh thu / Số lượng cổ phiếu"
+      },
+      {
+        "id": "C",
+        "text": "Giá cổ phiếu / Lợi nhuận"
+      },
+      {
+        "id": "D",
+        "text": "Vốn chủ sở hữu / Số lượng cổ phiếu"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 42,
+    "question": " Tỷ lệ Margin Call (lệnh gọi ký quỹ) thường là bao nhiêu?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Khoảng 30-40% tùy quy định công ty chứng khoán"
+      },
+      {
+        "id": "B",
+        "text": "10%"
+      },
+      {
+        "id": "C",
+        "text": "80%"
+      },
+      {
+        "id": "D",
+        "text": "100%"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 43,
+    "question": " Khi lãi suất ngân hàng tăng, giá cổ phiếu thường có xu hướng?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giảm"
+      },
+      {
+        "id": "B",
+        "text": "Tăng mạnh"
+      },
+      {
+        "id": "C",
+        "text": "Không thay đổi"
+      },
+      {
+        "id": "D",
+        "text": "Tăng nhẹ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 44,
+    "question": " Cổ phiếu chu kỳ (Cyclical Stock) là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cổ phiếu của doanh nghiệp có lợi nhuận biến động mạnh theo chu kỳ kinh tế"
+      },
+      {
+        "id": "B",
+        "text": "Cổ phiếu y tế, dược phẩm"
+      },
+      {
+        "id": "C",
+        "text": "Cổ phiếu điện, nước"
+      },
+      {
+        "id": "D",
+        "text": "Cổ phiếu ít biến động"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 45,
+    "question": " Cổ phiếu phòng thủ (Defensive Stock) là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cổ phiếu ít bị ảnh hưởng bởi suy thoái kinh tế (VD: Điện, Nước, Dược)"
+      },
+      {
+        "id": "B",
+        "text": "Cổ phiếu công nghệ cao"
+      },
+      {
+        "id": "C",
+        "text": "Cổ phiếu bất động sản"
+      },
+      {
+        "id": "D",
+        "text": "Cổ phiếu đầu cơ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 46,
+    "question": " Đường MA (Moving Average) trong phân tích kỹ thuật là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Đường trung bình động"
+      },
+      {
+        "id": "B",
+        "text": "Đường xu hướng"
+      },
+      {
+        "id": "C",
+        "text": "Đường kháng cự"
+      },
+      {
+        "id": "D",
+        "text": "Đường hỗ trợ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 47,
+    "question": " Chỉ số RSI > 70 thường báo hiệu điều gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Thị trường đang ở vùng Quá mua (Overbought)"
+      },
+      {
+        "id": "B",
+        "text": "Thị trường đang ở vùng Quá bán (Oversold)"
+      },
+      {
+        "id": "C",
+        "text": "Giá sẽ đi ngang"
+      },
+      {
+        "id": "D",
+        "text": "Giá sẽ giảm mạnh ngay lập tức"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 48,
+    "question": " MACD là tên viết tắt của chỉ báo nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Moving Average Convergence Divergence"
+      },
+      {
+        "id": "B",
+        "text": "Moving Average Cross Direction"
+      },
+      {
+        "id": "C",
+        "text": "Market Analysis Chart Data"
+      },
+      {
+        "id": "D",
+        "text": "Money Accumulation Distribution"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 49,
+    "question": " Thuật ngữ 'Bắt dao rơi' trong đầu tư nghĩa là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mua cổ phiếu khi giá đang giảm mạnh với hy vọng bắt đáy"
+      },
+      {
+        "id": "B",
+        "text": "Bán cổ phiếu khi giá đang tăng"
+      },
+      {
+        "id": "C",
+        "text": "Mua cổ phiếu giá trần"
+      },
+      {
+        "id": "D",
+        "text": "Đứng ngoài quan sát thị trường"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 50,
+    "question": " Tỷ lệ P/E bao nhiêu được coi là rẻ?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Phụ thuộc vào trung bình ngành và tốc độ tăng trưởng của doanh nghiệp"
+      },
+      {
+        "id": "B",
+        "text": "Luôn là dưới 10"
+      },
+      {
+        "id": "C",
+        "text": "Luôn là dưới 5"
+      },
+      {
+        "id": "D",
+        "text": "Trên 20"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 51,
+    "question": " Vào ngày giao dịch không hưởng quyền (GDKHQ), giá cổ phiếu sẽ như thế nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Điều chỉnh giảm tương ứng với giá trị cổ tức/quyền nhận được"
+      },
+      {
+        "id": "B",
+        "text": "Tăng trần"
+      },
+      {
+        "id": "C",
+        "text": "Giữ nguyên không đổi"
+      },
+      {
+        "id": "D",
+        "text": "Tăng nhẹ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 52,
+    "question": " Trả cổ tức bằng cổ phiếu có làm thay đổi vốn chủ sở hữu của công ty không?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Không (chỉ chuyển từ Lợi nhuận sau thuế sang Vốn điều lệ)"
+      },
+      {
+        "id": "B",
+        "text": "Có, làm tăng vốn chủ sở hữu"
+      },
+      {
+        "id": "C",
+        "text": "Có, làm giảm vốn chủ sở hữu"
+      },
+      {
+        "id": "D",
+        "text": "Tùy trường hợp"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 53,
+    "question": " Nhà đầu tư F0 (người mới) thường mắc phải sai lầm nào nhất?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tâm lý yếu, FOMO (sợ bỏ lỡ), thiếu kiến thức nền tảng"
+      },
+      {
+        "id": "B",
+        "text": "Quá cẩn thận trong giao dịch"
+      },
+      {
+        "id": "C",
+        "text": "Phân tích quá kỹ báo cáo tài chính"
+      },
+      {
+        "id": "D",
+        "text": "Không sử dụng margin"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 54,
+    "question": " Chiến lược 'Buy and Hold' là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mua và nắm giữ dài hạn bất chấp biến động ngắn hạn"
+      },
+      {
+        "id": "B",
+        "text": "Mua bán liên tục trong ngày"
+      },
+      {
+        "id": "C",
+        "text": "Lướt sóng T+"
+      },
+      {
+        "id": "D",
+        "text": "Bán khống"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 55,
+    "question": " Mã chứng khoán của quỹ ETF mô phỏng chỉ số VN30 phổ biến là?",
+    "options": [
+      {
+        "id": "A",
+        "text": "E1VFVN30"
+      },
+      {
+        "id": "B",
+        "text": "VCB"
+      },
+      {
+        "id": "C",
+        "text": "VNM"
+      },
+      {
+        "id": "D",
+        "text": "HPG"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 56,
+    "question": " Khi lạm phát cao, nhóm ngành nào thường được cho là nơi trú ẩn an toàn?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Năng lượng, Hàng hóa thiết yếu"
+      },
+      {
+        "id": "B",
+        "text": "Công nghệ"
+      },
+      {
+        "id": "C",
+        "text": "Xây dựng"
+      },
+      {
+        "id": "D",
+        "text": "Du lịch"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 57,
+    "question": " Báo cáo tài chính của công ty niêm yết bắt buộc phải được kiểm toán bao lâu một lần?",
+    "options": [
+      {
+        "id": "A",
+        "text": "6 tháng (soát xét) và 1 năm (kiểm toán)"
+      },
+      {
+        "id": "B",
+        "text": "Hàng quý"
+      },
+      {
+        "id": "C",
+        "text": "Hàng tháng"
+      },
+      {
+        "id": "D",
+        "text": "2 năm một lần"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 58,
+    "question": " Lợi nhuận gộp (Gross Profit) được tính bằng?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Doanh thu thuần - Giá vốn hàng bán"
+      },
+      {
+        "id": "B",
+        "text": "Lợi nhuận sau thuế"
+      },
+      {
+        "id": "C",
+        "text": "Lợi nhuận trước thuế"
+      },
+      {
+        "id": "D",
+        "text": "Doanh thu tài chính"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 59,
+    "question": " Chỉ số ROA (Return on Assets) đo lường điều gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Khả năng sinh lời trên tổng tài sản của doanh nghiệp"
+      },
+      {
+        "id": "B",
+        "text": "Khả năng sinh lời trên vốn chủ sở hữu"
+      },
+      {
+        "id": "C",
+        "text": "Khả năng sinh lời trên doanh thu"
+      },
+      {
+        "id": "D",
+        "text": "Tỷ suất cổ tức"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 60,
+    "question": " Giai đoạn 'Tích lũy' của cổ phiếu thường có đặc điểm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Giá đi ngang trong biên độ hẹp với khối lượng thấp"
+      },
+      {
+        "id": "B",
+        "text": "Giá tăng mạnh với khối lượng lớn"
+      },
+      {
+        "id": "C",
+        "text": "Giá giảm mạnh"
+      },
+      {
+        "id": "D",
+        "text": "Biến động rất mạnh"
+      }
+    ],
+    "userAnswer": null
+  }
+]
