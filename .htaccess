@@ -1,12 +1,29 @@
-# .htaccess - Tối ưu và cấu hình Reverse Proxy cho AZDIGI (LiteSpeed / Apache)
+# .htaccess - Tối ưu và cấu hình Reverse Proxy & URL Rewriting cho AZDIGI (LiteSpeed / Apache)
 RewriteEngine On
 
-# 1. Chuyển tiếp kết nối WebSocket /ws tới Node.js WebSocket Server (cổng 8085 cục bộ)
+# 1. Chuyển tiếp kết nối /ws tới Node.js Server (cả WebSocket và HTTP Health Check)
 RewriteCond %{HTTP:Upgrade} =websocket [NC]
-RewriteCond %{HTTP:Connection} =Upgrade [NC]
 RewriteRule ^ws/?(.*)$ ws://127.0.0.1:8085/$1 [P,L]
 
-# 2. Bảo vệ các tệp cơ sở dữ liệu SQLite và cấu hình nhạy cảm
+RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+RewriteRule ^ws/?(.*)$ http://127.0.0.1:8085/$1 [P,L]
+
+# 2. Định tuyến các trang chức năng từ thư mục pages/ (hỗ trợ cả URL có đuôi .php và không có đuôi)
+RewriteCond %{DOCUMENT_ROOT}/pages/$1.php -f [OR]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(login|portal|dashboard|logout|role_switch)(\.php)?$ pages/$1.php [L,QSA]
+
+# 3. Định tuyến AJAX tập trung từ thư mục includes/
+RewriteRule ^(ajax_handler)(\.php)?$ includes/ajax_handler.php [L,QSA]
+
+# 4. Định tuyến tài nguyên tĩnh (assets tương thích ngược URL cũ)
+RewriteRule ^style\.css$ assets/css/style.css [L]
+RewriteRule ^script\.js$ assets/js/script.js [L]
+RewriteRule ^websocket-client\.js$ assets/js/websocket-client.js [L]
+RewriteRule ^img/(.*)$ assets/img/$1 [L]
+RewriteRule ^font/(.*)$ assets/font/$1 [L]
+
+# 5. Bảo vệ các tệp cơ sở dữ liệu SQLite và cấu hình nhạy cảm
 <FilesMatch "(\.sqlite|\.sqlite3|\.db|\.env)$">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -17,5 +34,5 @@ RewriteRule ^ws/?(.*)$ ws://127.0.0.1:8085/$1 [P,L]
     </IfModule>
 </FilesMatch>
 
-# 3. Chặn xem trực tiếp cấu trúc thư mục
+# 6. Chặn xem trực tiếp cấu trúc thư mục
 Options -Indexes

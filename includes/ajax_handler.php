@@ -5,7 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 header('Content-Type: application/json; charset=utf-8');
-require_once 'config.php';
+$rootDir = dirname(__DIR__);
+require_once $rootDir . '/config.php';
 
 $action = $_GET['ajax_action'] ?? '';
 
@@ -234,7 +235,7 @@ try {
                 exit;
             }
 
-            $targetDir = __DIR__ . '/exams';
+            $targetDir = $rootDir . '/exams';
             if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
             $targetPath = $targetDir . '/' . $name;
 
@@ -250,8 +251,8 @@ try {
     }
 
     if ($action === 'list_subjects') {
-        $examDirFiles = glob(__DIR__ . '/exams/*.json') ?: [];
-        $rootFiles = glob(__DIR__ . '/*.json') ?: [];
+        $examDirFiles = glob($rootDir . '/exams/*.json') ?: [];
+        $rootFiles = glob($rootDir . '/*.json') ?: [];
         $seen = [];
         $result = [];
         foreach (array_merge($examDirFiles, $rootFiles) as $f) {
@@ -271,12 +272,12 @@ try {
         if (!$name) { echo json_encode(['status' => 'error', 'message' => 'Tên không hợp lệ']); exit; }
 
         $filename = $name . '.json';
-        $targetPath = __DIR__ . '/exams/' . $filename;
-        if (file_exists($targetPath) || file_exists(__DIR__ . '/' . $filename)) { 
+        $targetPath = $rootDir . '/exams/' . $filename;
+        if (file_exists($targetPath) || file_exists($rootDir . '/' . $filename)) { 
             echo json_encode(['status' => 'error', 'message' => 'File đã tồn tại']); exit; 
         }
 
-        if (!is_dir(__DIR__ . '/exams')) mkdir(__DIR__ . '/exams', 0777, true);
+        if (!is_dir($rootDir . '/exams')) mkdir($rootDir . '/exams', 0777, true);
         file_put_contents($targetPath, json_encode([], JSON_PRETTY_PRINT));
         echo json_encode(['status' => 'success']);
         exit;
@@ -284,8 +285,8 @@ try {
 
     if ($action === 'delete_subject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $filename = basename($_POST['filename'] ?? '');
-        $path1 = __DIR__ . '/exams/' . $filename;
-        $path2 = __DIR__ . '/' . $filename;
+        $path1 = $rootDir . '/exams/' . $filename;
+        $path2 = $rootDir . '/' . $filename;
         $deleted = false;
         if (file_exists($path1)) { unlink($path1); $deleted = true; }
         if (file_exists($path2)) { unlink($path2); $deleted = true; }
@@ -299,7 +300,7 @@ try {
 
     if ($action === 'get_questions') {
         $filename = basename($_GET['filename'] ?? '');
-        $path = file_exists(__DIR__ . '/exams/' . $filename) ? (__DIR__ . '/exams/' . $filename) : (__DIR__ . '/' . $filename);
+        $path = file_exists($rootDir . '/exams/' . $filename) ? ($rootDir . '/exams/' . $filename) : ($rootDir . '/' . $filename);
         if (file_exists($path)) {
             $content = file_get_contents($path);
             echo json_encode(['status' => 'success', 'data' => json_decode($content, true) ?? []]);
@@ -314,9 +315,9 @@ try {
         $questionsJSON = $_POST['questions'] ?? '[]';
         $questions = json_decode($questionsJSON, true);
         if ($questions === null) { echo json_encode(['status' => 'error', 'message' => 'JSON lỗi cú pháp']); exit; }
-        $targetDir = __DIR__ . '/exams';
+        $targetDir = $rootDir . '/exams';
         if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-        $targetPath = file_exists(__DIR__ . '/' . $filename) ? (__DIR__ . '/' . $filename) : ($targetDir . '/' . $filename);
+        $targetPath = file_exists($rootDir . '/' . $filename) ? ($rootDir . '/' . $filename) : ($targetDir . '/' . $filename);
         file_put_contents($targetPath, json_encode($questions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         echo json_encode(['status' => 'success']);
         exit;

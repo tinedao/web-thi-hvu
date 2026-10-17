@@ -1,15 +1,17 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // --- XỬ LÝ AJAX TẬP TRUNG ---
 if (isset($_GET['ajax_action'])) {
-    require_once 'ajax_handler.php';
+    require_once __DIR__ . '/../includes/ajax_handler.php';
     exit;
 }
 
 // Xử lý khi form đăng nhập được submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once 'config.php';
+    require_once __DIR__ . '/../config.php';
 
     $student_id = trim($_POST['student_id'] ?? '');
     $fullname = trim($_POST['fullname'] ?? '');
@@ -187,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="login-card">
         <div class="login-header">
-            <img src="img/logo.png" alt="Logo HVU" onerror="this.style.display='none'">
+            <img src="../assets/img/logo.png" alt="Logo HVU" onerror="this.style.display='none'">
             <h2>CỔNG THI TRỰC TUYẾN</h2>
             <p>Hệ thống Khảo thí & Đánh giá Năng lực</p>
         </div>

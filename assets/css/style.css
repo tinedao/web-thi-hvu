@@ -3,7 +3,7 @@
 
 @font-face {
     font-family: 'DS-DIGIB';
-    src: url('font/DS-DIGIB.TTF') format('truetype');
+    src: url('../font/DS-DIGIB.TTF') format('truetype');
 }
 
 * {

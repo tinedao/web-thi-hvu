@@ -1,6 +1,11 @@
 // scripts/test_ajax_autoload.js - Kiểm tra cơ chế tự động tải (Auto-load AJAX & Realtime WS)
 const http = require('http');
-const WebSocket = require('ws');
+let WebSocket;
+try {
+    WebSocket = require('ws');
+} catch (e) {
+    WebSocket = require('../websocket/node_modules/ws');
+}
 
 const BASE_URL = 'http://127.0.0.1:8000';
 const WS_URL = 'ws://127.0.0.1:8085';

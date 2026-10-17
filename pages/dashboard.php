@@ -1,9 +1,11 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // --- XỬ LÝ AJAX TẬP TRUNG ---
 if (isset($_GET['ajax_action'])) {
-    require_once 'ajax_handler.php';
+    require_once __DIR__ . '/../includes/ajax_handler.php';
     exit;
 }
 
@@ -22,7 +24,7 @@ if (empty($_SESSION['ws_token'])) {
     $_SESSION['ws_token'] = bin2hex(random_bytes(16));
 }
 
-$ws_config = require 'websocket_config.php';
+$ws_config = require __DIR__ . '/../websocket_config.php';
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -315,7 +317,7 @@ $ws_config = require 'websocket_config.php';
     </div>
 
     <!-- Script WebSocket Client -->
-    <script src="websocket-client.js?v=<?= time() ?>"></script>
+    <script src="../assets/js/websocket-client.js?v=<?= time() ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>

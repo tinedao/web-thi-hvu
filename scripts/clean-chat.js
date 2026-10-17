@@ -27,7 +27,13 @@ function getDb() {
             all: (sql, params) => db.prepare(sql).all(...(params || []))
         };
     } catch (e) {
-        const sqlite3 = require('sqlite3').verbose();
+        let sqlite3Lib;
+        try {
+            sqlite3Lib = require('sqlite3');
+        } catch (err) {
+            sqlite3Lib = require('../websocket/node_modules/sqlite3');
+        }
+        const sqlite3 = sqlite3Lib.verbose();
         const db = new sqlite3.Database(dbPath);
         return {
             type: 'callback',

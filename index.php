@@ -1,16 +1,54 @@
 <?php
-session_start();
+// Router hỗ trợ PHP Built-in Server (php -S) cho môi trường kiểm thử và phát triển
+if (php_sapi_name() === 'cli-server') {
+    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if ($uri !== '/' && $uri !== '/index.php' && file_exists(__DIR__ . $uri)) {
+        return false;
+    }
+    // Hỗ trợ request trực tiếp tài nguyên assets khi không qua Apache/Nginx
+    if ($uri !== '/' && file_exists(__DIR__ . '/assets' . $uri)) {
+        $ext = strtolower(pathinfo($uri, PATHINFO_EXTENSION));
+        $mimes = [
+            'css' => 'text/css',
+            'js' => 'application/javascript',
+            'jpg' => 'image/jpeg',
+            'png' => 'image/png',
+            'ttf' => 'font/ttf',
+            'woff2' => 'font/woff2'
+        ];
+        header('Content-Type: ' . ($mimes[$ext] ?? 'application/octet-stream'));
+        readfile(__DIR__ . '/assets' . $uri);
+        exit;
+    }
+    $pageMap = [
+        '/login.php' => __DIR__ . '/pages/login.php',
+        '/portal.php' => __DIR__ . '/pages/portal.php',
+        '/dashboard.php' => __DIR__ . '/pages/dashboard.php',
+        '/logout.php' => __DIR__ . '/pages/logout.php',
+        '/role_switch.php' => __DIR__ . '/pages/role_switch.php',
+        '/ajax_handler.php' => __DIR__ . '/includes/ajax_handler.php',
+        '/chat_popup.php' => __DIR__ . '/includes/chat_popup.php',
+    ];
+    if (isset($pageMap[$uri])) {
+        require $pageMap[$uri];
+        exit;
+    }
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // --- XỬ LÝ AJAX (Chuyển sang ajax_handler.php tập trung) ---
 if (isset($_GET['ajax_action'])) {
-    require_once 'ajax_handler.php';
+    require_once __DIR__ . '/includes/ajax_handler.php';
     exit;
 }
 // --- KẾT THÚC XỬ LÝ AJAX ---
 
 // Kiểm tra đăng nhập (Session)
 if (!isset($_SESSION['fullname']) || !isset($_SESSION['student_id']) || !isset($_SESSION['exam_id'])) {
-    header("Location: login.php");
+    header("Location: pages/login.php");
     exit();
 }
 
@@ -61,7 +99,7 @@ $current_q = $questions[$current_index];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống thi trắc nghiệm</title>
-    <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?php echo time(); ?>">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
 
     <style>
@@ -79,7 +117,7 @@ $current_q = $questions[$current_index];
         <div class="container">
             <div class="user-info">
             <div class="avatar" onclick="toggleChatPopup()">
-                <img src="img/avatar.jpg" alt="Avatar">
+                <img src="assets/img/avatar.jpg" alt="Avatar">
             </div>
             <div class="user-details">
                 <h4><?php echo htmlspecialchars($_SESSION['fullname']); ?></h4>
@@ -87,7 +125,7 @@ $current_q = $questions[$current_index];
             </div>
         </div>
 
-        <a class="timer" href="logout.php" id="countdown">60:00</a>
+        <a class="timer" href="pages/logout.php" id="countdown">60:00</a>
 
         <button class="submit-btn" id="submit-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
             <svg width="14" height="14" viewBox="0 0 512 512" fill="currentColor" style="vertical-align: middle;"><path d="M373.1 25C401.2-3.1 446.8-3.1 474.9 25L487 37.1c28.1 28.1 28.1 73.7 0 101.8L289.8 336.2c-8.7 8.7-19.4 15-31.1 18.3l-100 28.6c-8.4 2.4-17.4 .1-23.6-6.1s-8.5-15.2-6.1-23.6l28.6-100c3.4-11.8 9.7-22.5 18.3-31.1L373.1 25zM88 64C39.4 64 0 103.4 0 152V424c0 48.6 39.4 88 88 88H360c48.6 0 88-39.4 88-88V312c0-13.3-10.7-24-24-24s-24 10.7-24 24V424c0 22.1-17.9 40-40 40H88c-22.1 0-40-17.9-40-40V152c0-22.1 17.9-40 40-40H200c13.3 0 24-10.7 24-24s-10.7-24-24-24H88z"/></svg>
@@ -173,7 +211,7 @@ $current_q = $questions[$current_index];
     </footer>
 
     <!-- Include Chat Popup -->
-    <?php include 'chat_popup.php'; ?>
+    <?php include __DIR__ . '/includes/chat_popup.php'; ?>
 
     <!-- 6. TRUYỀN DỮ LIỆU TỪ PHP SANG JS -->
     <script>
@@ -184,7 +222,7 @@ $current_q = $questions[$current_index];
         const currentUser = "<?php echo htmlspecialchars($_SESSION['chat_sender']); ?>"; // Biến định danh người chat hiện tại
         const currentUserId = "<?php echo htmlspecialchars($_SESSION['student_id']); ?>";
         const wsToken = "<?php echo htmlspecialchars($_SESSION['ws_token'] ?? ''); ?>";
-        const wsConfigUrl = "<?php $wsc = require 'websocket_config.php'; echo $wsc['client_url']; ?>";
+        const wsConfigUrl = "<?php $wsc = require __DIR__ . '/websocket_config.php'; echo $wsc['client_url']; ?>";
         
         // Thông tin cho Chat System Message
         const examInfo = {
@@ -194,8 +232,8 @@ $current_q = $questions[$current_index];
         };
     </script>
 
-    <script src="websocket-client.js?v=<?php echo time(); ?>"></script>
-    <script src="script.js?v=<?php echo time(); ?>"></script>
+    <script src="assets/js/websocket-client.js?v=<?php echo time(); ?>"></script>
+    <script src="assets/js/script.js?v=<?php echo time(); ?>"></script>
     <script>
         // Hàm đếm ngược thời gian
         function startTimer(duration, display) {

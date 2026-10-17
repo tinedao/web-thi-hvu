@@ -1,6 +1,8 @@
 node_modules/
+websocket/node_modules/
 data/*.sqlite
 data/*.sqlite-wal
 data/*.sqlite-shm
+backup/*.zip
 .DS_Store
 Thumbs.db

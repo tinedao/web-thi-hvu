@@ -2,7 +2,12 @@
  * test_system.js - Kịch bản kiểm thử tự động toàn diện hệ thống
  */
 
-const { WebSocket } = require('ws');
+let WebSocket;
+try {
+    WebSocket = require('ws').WebSocket || require('ws');
+} catch (e) {
+    WebSocket = require('../websocket/node_modules/ws').WebSocket || require('../websocket/node_modules/ws');
+}
 
 async function runTests() {
     console.log('==================================================');

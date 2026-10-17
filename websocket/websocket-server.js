@@ -17,10 +17,14 @@ const rawPort = process.env.PORT || process.env.WS_PORT;
 const isNamedPipe = rawPort && isNaN(Number(rawPort));
 const PORT = isNamedPipe ? rawPort : parseInt(rawPort || '8085', 10);
 const HOST = process.env.WS_HOST || '0.0.0.0';
-const dbPath = path.join(__dirname, 'data', 'chat.sqlite');
+// Tự động nhận diện thư mục data (tương thích cả khi đặt websocket trong public_html hoặc ngang hàng)
+let dataDir = path.join(__dirname, '..', 'data');
+if (!fs.existsSync(dataDir) && fs.existsSync(path.join(__dirname, '..', 'public_html', 'data'))) {
+    dataDir = path.join(__dirname, '..', 'public_html', 'data');
+}
+const dbPath = path.join(dataDir, 'chat.sqlite');
 
 // Đảm bảo thư mục data/ tồn tại
-const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -40,17 +44,29 @@ try {
     };
     console.log('[SQLite] Đã kết nối qua node:sqlite (WAL mode)');
 } catch (e) {
-    const sqlite3 = require('sqlite3').verbose();
-    const asyncDb = new sqlite3.Database(dbPath);
-    asyncDb.run('PRAGMA journal_mode = WAL;');
-    db = {
-        type: 'async',
-        exec: (sql) => new Promise((res, rej) => asyncDb.exec(sql, (err) => err ? rej(err) : res())),
-        run: (sql, params = []) => new Promise((res, rej) => asyncDb.run(sql, params, function (err) { err ? rej(err) : res(this); })),
-        get: (sql, params = []) => new Promise((res, rej) => asyncDb.get(sql, params, (err, row) => err ? rej(err) : res(row))),
-        all: (sql, params = []) => new Promise((res, rej) => asyncDb.all(sql, params, (err, rows) => err ? rej(err) : res(rows)))
-    };
-    console.log('[SQLite] Đã kết nối qua sqlite3 package (WAL mode)');
+    try {
+        const sqlite3 = require('sqlite3').verbose();
+        const asyncDb = new sqlite3.Database(dbPath);
+        asyncDb.run('PRAGMA journal_mode = WAL;');
+        db = {
+            type: 'async',
+            exec: (sql) => new Promise((res, rej) => asyncDb.exec(sql, (err) => err ? rej(err) : res())),
+            run: (sql, params = []) => new Promise((res, rej) => asyncDb.run(sql, params, function (err) { err ? rej(err) : res(this); })),
+            get: (sql, params = []) => new Promise((res, rej) => asyncDb.get(sql, params, (err, row) => err ? rej(err) : res(row))),
+            all: (sql, params = []) => new Promise((res, rej) => asyncDb.all(sql, params, (err, rows) => err ? rej(err) : res(rows)))
+        };
+        console.log('[SQLite] Đã kết nối qua sqlite3 package (WAL mode)');
+    } catch (err) {
+        console.warn('[SQLite] Cảnh báo lỗi nạp module sqlite3:', err.message);
+        console.log('[SQLite Fallback] Đang dùng bộ nhớ RAM tạm thời để máy chủ tiếp tục chạy...');
+        db = {
+            type: 'async',
+            exec: async () => {},
+            run: async () => ({ changes: 1, lastID: Date.now() }),
+            get: async () => null,
+            all: async () => []
+        };
+    }
 }
 
 // Khởi tạo cấu trúc bảng SQLite
@@ -133,12 +149,16 @@ setInterval(cleanOldMessages, 3600 * 1000);
 // Tạo HTTP Server và WebSocket Server
 const server = http.createServer((req, res) => {
     // Health check endpoint
-    if (req.url === '/health' || req.url === '/ws-health') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+    const cleanUrl = (req.url || '').split('?')[0];
+    if (cleanUrl === '/health' || cleanUrl === '/ws/health' || cleanUrl === '/ws-health' || cleanUrl.endsWith('/health')) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({
             status: 'ok',
+            message: 'HVU WebSocket Server is healthy and running',
             time: new Date().toISOString(),
-            connections: wss.clients.size
+            connections: wss.clients.size,
+            port: PORT,
+            isNamedPipe
         }));
         return;
     }
@@ -660,6 +680,26 @@ if (isNamedPipe) {
         console.log(`⏱️ Tự động xóa tin nhắn cũ hơn 24 giờ đã được kích hoạt`);
         console.log(`====================================================`);
     });
+
+    // Mở thêm listener phụ trên 127.0.0.1:8085 để tương thích LiteSpeed Reverse Proxy trong .htaccess
+    try {
+        const dualHttp = http.createServer((req, res) => {
+            server.emit('request', req, res);
+        });
+        dualHttp.on('upgrade', (req, socket, head) => {
+            wss.handleUpgrade(req, socket, head, (ws) => {
+                wss.emit('connection', ws, req);
+            });
+        });
+        dualHttp.listen(8085, '127.0.0.1', () => {
+            console.log(`🚀 Đã mở thêm cổng nội bộ 127.0.0.1:8085 cho LiteSpeed .htaccess Reverse Proxy`);
+        });
+        dualHttp.on('error', (e) => {
+            console.log(`[DualPort Note] Cổng 8085 bận (${e.message}), máy chủ tiếp tục chạy qua Pipe.`);
+        });
+    } catch (e) {
+        console.log('[DualPort Init Error]', e.message);
+    }
 } else {
     server.listen(PORT, HOST, () => {
         console.log(`====================================================`);

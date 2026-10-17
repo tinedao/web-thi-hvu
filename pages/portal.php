@@ -1,7 +1,9 @@
 <?php
 // portal.php - Cổng thông tin khảo thí Đại học Hùng Vương (HVU)
-session_start();
-require_once __DIR__ . '/config.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once __DIR__ . '/../config.php';
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['student_id']) || !isset($_SESSION['fullname'])) {
@@ -33,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_verify_code'])) 
 
     // Nếu hệ thống chưa tạo ca thi nào, tạo một phiên mặc định
     if (!$session) {
-        $files = glob(__DIR__ . '/exams/*.json') ?: glob(__DIR__ . '/*.json') ?: [];
+        $files = glob(dirname(__DIR__) . '/exams/*.json') ?: [];
         $sampleFile = !empty($files) ? basename($files[0]) : 'dau_tu_chung_khoan.json';
         $session = [
             'id' => 1,
@@ -129,7 +131,7 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
         /* Nhúng font Inter WOFF2 chuẩn của trường */
         @font-face {
             font-family: 'Inter';
-            src: url('font/Inter-roman.var.20c8da8a92236b58.woff2') format('woff2');
+            src: url('../assets/font/Inter-roman.var.20c8da8a92236b58.woff2') format('woff2');
             font-weight: 100 900;
             font-style: normal;
             font-display: swap;
@@ -535,7 +537,7 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
     <!-- Header chuẩn tuyệt đối theo ảnh -->
     <header class="hvu-header">
         <div class="header-brand">
-            <img src="img/logo.png" alt="HVU Logo">
+            <img src="../assets/img/logo.png" alt="HVU Logo">
             <span class="school-title">TRƯỜNG ĐẠI HỌC HÙNG VƯƠNG</span>
         </div>
 
@@ -689,7 +691,7 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
                 if (data.status === 'success') {
                     btn.textContent = 'Thành công! Đang vào thi...';
                     btn.style.backgroundColor = '#1e8e3e';
-                    window.location.href = data.redirect || 'index.php';
+                    window.location.href = (window.location.pathname.includes('/pages/') ? '../' : '') + (data.redirect || 'index.php');
                 } else {
                     btn.disabled = false;
                     btn.textContent = 'Vào thi';

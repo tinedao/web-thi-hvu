@@ -1,7 +1,9 @@
 <?php
 // role_switch.php - Chuyển đổi vai trò linh hoạt giữa Thi (exam) và Hỗ trợ (support)
-session_start();
-require_once __DIR__ . '/config.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once __DIR__ . '/../config.php';
 
 if (!isset($_SESSION['student_id'])) {
     header("Location: login.php");

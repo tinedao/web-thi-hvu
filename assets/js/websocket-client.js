@@ -85,8 +85,8 @@ class HVUWebSocketClient {
             }
         };
 
-        this.ws.onclose = () => {
-            console.warn('[WS Client] Mất kết nối tới máy chủ');
+        this.ws.onclose = (event) => {
+            console.warn(`[WS Client] Mất kết nối tới: ${this.url} (Code: ${event.code || 'None'}, Reason: ${event.reason || 'Không rõ'})`);
             this.isConnected = false;
             this.stopHeartbeat();
             this.onConnectionChange(false);
@@ -94,7 +94,10 @@ class HVUWebSocketClient {
         };
 
         this.ws.onerror = (err) => {
-            console.error('[WS Client Error]', err);
+            console.error('[WS Client Error] Không thể thiết lập kết nối WebSocket tới:', this.url);
+            console.info('[WS Diagnostic] Bạn có thể kiểm tra trạng thái WebSocket Server bằng cách mở link sau trên trình duyệt:');
+            const testHttpUrl = this.url.replace(/^wss:/i, 'https:').replace(/^ws:/i, 'http:') + '/health';
+            console.info('👉 ' + testHttpUrl);
             try { this.ws.close(); } catch (e) {}
         };
     }
