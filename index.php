@@ -26,6 +26,7 @@ if (php_sapi_name() === 'cli-server') {
         '/dashboard.php' => __DIR__ . '/pages/dashboard.php',
         '/logout.php' => __DIR__ . '/pages/logout.php',
         '/role_switch.php' => __DIR__ . '/pages/role_switch.php',
+        '/master.php' => __DIR__ . '/pages/master.php',
         '/ajax_handler.php' => __DIR__ . '/includes/ajax_handler.php',
         '/chat_popup.php' => __DIR__ . '/includes/chat_popup.php',
     ];
@@ -34,6 +35,8 @@ if (php_sapi_name() === 'cli-server') {
         exit;
     }
 }
+
+require_once __DIR__ . '/includes/site_guard.php'; // Website tắt -> 404
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -233,6 +236,7 @@ $current_q = $questions[$current_index];
     </script>
 
     <script src="assets/js/websocket-client.js?v=<?php echo time(); ?>"></script>
+    <script src="assets/js/chat.js?v=<?php echo time(); ?>"></script>
     <script src="assets/js/script.js?v=<?php echo time(); ?>"></script>
     <script>
         // Hàm đếm ngược thời gian

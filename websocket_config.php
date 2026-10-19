@@ -25,6 +25,12 @@ if ($host_only === 'localhost' || $host_only === '127.0.0.1') {
         // Tự động kết nối qua /ws (Port 443 SSL an toàn, không bị firewall chặn)
         $ws_url = "{$ws_proto}{$host_only}/ws";
     }
+
+    // Đảm bảo Node.js WebSocket server đang chạy (hosting có thể tự tắt tiến trình khi rảnh)
+    if (stripos(PHP_OS, 'WIN') !== 0) {
+        require_once __DIR__ . '/includes/ws_watchdog.php';
+        hvu_ws_watchdog((int)$ws_port);
+    }
 }
 
 return [

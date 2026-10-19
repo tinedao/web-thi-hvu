@@ -167,6 +167,8 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server });
+// Lỗi listen của HTTP server được wss phát lại; đã xử lý ở server.on('error') bên dưới
+wss.on('error', () => {});
 
 /**
  * Quản lý kết nối trong RAM
@@ -278,8 +280,18 @@ wss.on('connection', (ws, req) => {
         chatId: null
     });
 
+    // Trình duyệt tự trả lời ping ở tầng giao thức (kể cả khi tab chạy nền bị throttle timer)
+    ws.on('pong', () => {
+        const meta = connections.get(ws);
+        if (meta) meta.isAlive = true;
+    });
+
     // Xử lý gói tin từ Client
     ws.on('message', async (data) => {
+        // Bất kỳ gói tin nào nhận được cũng chứng tỏ kết nối còn sống
+        const aliveMeta = connections.get(ws);
+        if (aliveMeta) aliveMeta.isAlive = true;
+
         let msg = null;
         try {
             msg = JSON.parse(data.toString());
@@ -681,26 +693,42 @@ if (isNamedPipe) {
         console.log(`====================================================`);
     });
 
-    // Mở thêm listener phụ trên 127.0.0.1:8085 để tương thích LiteSpeed Reverse Proxy trong .htaccess
-    try {
-        const dualHttp = http.createServer((req, res) => {
-            server.emit('request', req, res);
+    // Mở thêm listener phụ trên 127.0.0.1:8085 để tương thích LiteSpeed Reverse Proxy trong .htaccess.
+    // Nếu cổng đang bận (tiến trình độc lập từ cron/watchdog đang giữ) thì thử lại định kỳ,
+    // để khi tiến trình kia chết thì tiến trình này tiếp quản cổng 8085 ngay.
+    const dualHttp = http.createServer((req, res) => {
+        server.emit('request', req, res);
+    });
+    dualHttp.on('upgrade', (req, socket, head) => {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit('connection', ws, req);
         });
-        dualHttp.on('upgrade', (req, socket, head) => {
-            wss.handleUpgrade(req, socket, head, (ws) => {
-                wss.emit('connection', ws, req);
+    });
+    dualHttp.on('error', (e) => {
+        console.log(`[DualPort Note] Cổng 8085 bận (${e.message}), thử lại sau 15s.`);
+        setTimeout(listenDual, 15000);
+    });
+    function listenDual() {
+        try {
+            dualHttp.listen(8085, '127.0.0.1', () => {
+                console.log(`🚀 Đã mở thêm cổng nội bộ 127.0.0.1:8085 cho LiteSpeed .htaccess Reverse Proxy`);
             });
-        });
-        dualHttp.listen(8085, '127.0.0.1', () => {
-            console.log(`🚀 Đã mở thêm cổng nội bộ 127.0.0.1:8085 cho LiteSpeed .htaccess Reverse Proxy`);
-        });
-        dualHttp.on('error', (e) => {
-            console.log(`[DualPort Note] Cổng 8085 bận (${e.message}), máy chủ tiếp tục chạy qua Pipe.`);
-        });
-    } catch (e) {
-        console.log('[DualPort Init Error]', e.message);
+        } catch (e) {
+            console.log('[DualPort Init Error]', e.message);
+            setTimeout(listenDual, 15000);
+        }
     }
+    listenDual();
 } else {
+    server.on('error', (e) => {
+        if (e.code === 'EADDRINUSE') {
+            // Đã có một tiến trình WebSocket khác giữ cổng -> thoát để không chạy trùng
+            console.log(`[WS Server] Cổng ${PORT} đã có tiến trình khác chạy, thoát.`);
+            process.exit(0);
+        }
+        console.error('[WS Server Error]', e);
+        process.exit(1);
+    });
     server.listen(PORT, HOST, () => {
         console.log(`====================================================`);
         console.log(`🚀 HVU WebSocket Server đang chạy tại http://${HOST}:${PORT}`);

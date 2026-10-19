@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/site_guard.php'; // Website tắt -> 404
 // role_switch.php - Chuyển đổi vai trò linh hoạt giữa Thi (exam) và Hỗ trợ (support)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

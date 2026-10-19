@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/site_guard.php'; // Website tắt -> 404
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -223,11 +224,30 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                 <!-- Cột trái: Form tạo ca thi mới -->
                 <div class="col-md-5">
                     <div class="card-custom">
-                        <h4>1. Thiết Lập Ca Thi Mới</h4>
+                        <h4 id="sessionFormTitle">1. Thiết Lập Ca Thi Mới</h4>
                         <form id="formCreateSession" onsubmit="handleCreateSession(event)">
+                            <input type="hidden" id="sessionEditId" value="">
                             <div class="mb-3">
                                 <label class="form-label" style="font-size:13px; font-weight:600;">Môn thi</label>
-                                <input type="text" id="sessionName" class="form-control form-control-sm" required placeholder="VD: Đầu tư chứng khoán">
+                                <input type="text" id="sessionName" class="form-control form-control-sm" required placeholder="VD: Phát triển ứng dụng IoT">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size:13px; font-weight:600;">Mã ca thi (hiển thị ở cột "Ca thi")</label>
+                                <input type="text" id="sessionCode" class="form-control form-control-sm" placeholder="VD: MDS_CPS318_20_10_2026_13_30_A35_Phát triển ứng dụng IoT">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <label class="form-label" style="font-size:13px; font-weight:600;">Đợt thi</label>
+                                    <input type="text" id="sessionBatch" class="form-control form-control-sm" value="Đợt thi 1">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label" style="font-size:13px; font-weight:600;">Năm học</label>
+                                    <input type="text" id="sessionYear" class="form-control form-control-sm" value="2026 - 2027">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label" style="font-size:13px; font-weight:600;">Học kỳ</label>
+                                    <input type="text" id="sessionSemester" class="form-control form-control-sm" value="Học kỳ 1">
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" style="font-size:13px; font-weight:600;">Chọn Đề thi JSON</label>
@@ -241,18 +261,42 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                                     <input type="number" id="sessionDuration" class="form-control form-control-sm" value="45" min="5" required>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label" style="font-size:13px; font-weight:600;">Ngày tháng thời gian thi</label>
-                                    <input type="text" id="sessionStartsAt" class="form-control form-control-sm" placeholder="VD: 17/10/2026 - 08:30">
+                                    <label class="form-label" style="font-size:13px; font-weight:600;">Giờ bắt đầu thi</label>
+                                    <input type="datetime-local" id="sessionStartsAt" class="form-control form-control-sm" required>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-primary w-100" style="font-weight:600;">+ Lưu Ca Thi</button>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size:13px; font-weight:600;">Mã sinh viên được thi (mỗi dòng 1 mã, hoặc cách nhau dấu phẩy)</label>
+                                <textarea id="sessionStudents" class="form-control form-control-sm" rows="4" placeholder="VD:&#10;235D150109&#10;235D150052"></textarea>
+                                <div class="form-text" style="font-size:11.5px;">Chỉ những sinh viên có trong danh sách mới thấy và vào được ca thi này.</div>
+                            </div>
+                            <div id="studentTimesBox" class="mb-3" style="display:none;">
+                                <label class="form-label" style="font-size:13px; font-weight:600;">Giờ thi riêng từng sinh viên (lưu ngay, sinh viên tự cập nhật sau ~15 giây)</label>
+                                <div class="table-responsive" style="max-height:320px; overflow-y:auto;">
+                                    <table class="table table-sm table-bordered mb-1" style="font-size:12px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Mã SV</th>
+                                                <th>Giờ bắt đầu</th>
+                                                <th style="width:70px;">Phút</th>
+                                                <th>Thao tác</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="studentTimesBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="form-text" style="font-size:11.5px;">Dòng tô vàng là sinh viên đang dùng giờ riêng. "Mặc định" = quay về giờ chung của ca thi.</div>
+                            </div>
+                            <button type="submit" id="btnSaveSession" class="btn btn-sm btn-primary w-100" style="font-weight:600;">+ Lưu Ca Thi</button>
+                            <button type="button" id="btnCancelEditSession" class="btn btn-sm btn-outline-secondary w-100 mt-2" style="display:none;" onclick="resetSessionForm()">Hủy sửa</button>
                         </form>
                     </div>
 
                     <div class="card-custom" style="background:#eef6ff; border-color:#b8d5ff;">
                         <h6 style="color:#003366; font-weight:700; margin-bottom:8px;">💡 Hướng dẫn luồng thi:</h6>
                         <p style="font-size:12.5px; color:#444; margin-bottom:0; line-height:1.5;">
-                            • Người hỗ trợ chỉ cần tạo ca thi gồm: <strong>Môn thi</strong>, <strong>Đề thi</strong>, <strong>Thời gian thi</strong> và <strong>Ngày tháng</strong>.<br>
+                            • Người hỗ trợ tạo ca thi gồm: <strong>Môn thi</strong>, <strong>Đề thi</strong>, <strong>Thời gian thi</strong>, <strong>Giờ bắt đầu</strong> và <strong>danh sách mã sinh viên</strong> được thi.<br>
+                            • Sinh viên chỉ thấy ca thi của mình, đếm ngược tới giờ thi rồi mới bấm "Vào thi" được.<br>
                             • Sinh viên khi đi thi sẽ tự nhập mã thi từ phòng thi bên ngoài. Hệ thống tự động chấp nhận và hiển thị mã thi của sinh viên vào danh sách bên phải.
                         </p>
                     </div>
@@ -273,12 +317,13 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                                         <th>Môn thi</th>
                                         <th>Ngày tháng thi</th>
                                         <th>Thời lượng</th>
+                                        <th>Sinh viên</th>
                                         <th>Trạng thái</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tableSessionsBody">
-                                    <tr><td colspan="6" class="text-center text-muted">Đang tải...</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted">Đang tải...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -931,11 +976,13 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                     filterSelect.innerHTML = '<option value="">Tất cả ca thi</option>';
 
                     if (!data.data || data.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Chưa có ca thi nào</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Chưa có ca thi nào</td></tr>';
                         return;
                     }
 
+                    examSessionsById = {};
                     data.data.forEach(s => {
+                        examSessionsById[s.id] = s;
                         filterSelect.innerHTML += `<option value="${s.id}">${escapeHtml(s.name)}</option>`;
 
                         const statusBadge = s.is_active 
@@ -945,11 +992,13 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td>${s.id}</td>
-                            <td><strong>${escapeHtml(s.name)}</strong><br><small class="text-muted"><code>${escapeHtml(s.exam_json)}</code></small></td>
+                            <td><strong>${escapeHtml(s.name)}</strong>${s.code ? `<br><small>${escapeHtml(s.code)}</small>` : ''}<br><small class="text-muted"><code>${escapeHtml(s.exam_json)}</code></small></td>
                             <td>${escapeHtml(s.starts_at || 'Mở tự do')}</td>
                             <td>${s.duration_minutes} phút</td>
+                            <td title="${escapeHtml((s.students || []).join(', '))}">${(s.students || []).length ? (s.students.length + ' SV') : '<span class="text-danger">Chưa gán</span>'}${(() => { const n = (s.student_rows || []).filter(r => r.start_ts > 0 || r.duration_minutes > 0).length; return n ? `<br><small class="text-warning-emphasis">${n} giờ riêng</small>` : ''; })()}</td>
                             <td>${statusBadge}</td>
                             <td>
+                                <button onclick="editExamSession(${s.id})" class="btn btn-xs btn-primary btn-sm py-0 px-2" style="font-size:11px;">Sửa / Gán SV</button>
                                 <button onclick="toggleExamSession(${s.id})" class="btn btn-xs btn-${s.is_active ? 'warning' : 'success'} btn-sm py-0 px-2" style="font-size:11px;">
                                     ${s.is_active ? 'Đóng' : 'Mở'}
                                 </button>
@@ -961,28 +1010,120 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                 });
         }
 
+        let examSessionsById = {};
+
         function handleCreateSession(e) {
             e.preventDefault();
-            const name = document.getElementById('sessionName').value.trim();
-            const examJson = document.getElementById('sessionExamJson').value;
-            const duration = document.getElementById('sessionDuration').value;
-            const startsAt = document.getElementById('sessionStartsAt').value.trim();
-
+            const editId = document.getElementById('sessionEditId').value;
             const fd = new FormData();
-            fd.append('name', name);
-            fd.append('exam_json', examJson);
-            fd.append('duration_minutes', duration);
-            fd.append('starts_at', startsAt);
+            if (editId) fd.append('id', editId);
+            fd.append('name', document.getElementById('sessionName').value.trim());
+            fd.append('code', document.getElementById('sessionCode').value.trim());
+            fd.append('batch_name', document.getElementById('sessionBatch').value.trim());
+            fd.append('school_year', document.getElementById('sessionYear').value.trim());
+            fd.append('semester', document.getElementById('sessionSemester').value.trim());
+            fd.append('exam_json', document.getElementById('sessionExamJson').value);
+            fd.append('duration_minutes', document.getElementById('sessionDuration').value);
+            fd.append('starts_at', document.getElementById('sessionStartsAt').value);
+            fd.append('students', document.getElementById('sessionStudents').value);
 
-            fetch('dashboard.php?ajax_action=create_exam_session', { method: 'POST', body: fd })
+            const action = editId ? 'update_exam_session' : 'create_exam_session';
+            fetch('dashboard.php?ajax_action=' + action, { method: 'POST', body: fd })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
                         alert(data.message);
-                        document.getElementById('sessionName').value = '';
-                        document.getElementById('sessionStartsAt').value = '';
+                        resetSessionForm();
                         loadExamSessions();
                     } else alert(data.message);
+                });
+        }
+
+        function editExamSession(id) {
+            const s = examSessionsById[id];
+            if (!s) return;
+            document.getElementById('sessionEditId').value = s.id;
+            document.getElementById('sessionName').value = s.name || '';
+            document.getElementById('sessionCode').value = s.code || '';
+            document.getElementById('sessionBatch').value = s.batch_name || 'Đợt thi 1';
+            document.getElementById('sessionYear').value = s.school_year || '';
+            document.getElementById('sessionSemester').value = s.semester || '';
+            const examSelect = document.getElementById('sessionExamJson');
+            if (![...examSelect.options].some(o => o.value === s.exam_json)) {
+                examSelect.innerHTML += `<option value="${escapeHtml(s.exam_json)}">${escapeHtml(s.exam_json)}</option>`;
+            }
+            examSelect.value = s.exam_json;
+            document.getElementById('sessionDuration').value = s.duration_minutes;
+            document.getElementById('sessionStartsAt').value = s.start_input || '';
+            document.getElementById('sessionStudents').value = (s.students || []).join('\n');
+            renderStudentTimes(s);
+            document.getElementById('sessionFormTitle').textContent = '1. Sửa Ca Thi #' + s.id;
+            document.getElementById('btnSaveSession').textContent = 'Lưu thay đổi';
+            document.getElementById('btnCancelEditSession').style.display = 'block';
+            document.getElementById('formCreateSession').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetSessionForm() {
+            document.getElementById('formCreateSession').reset();
+            document.getElementById('sessionEditId').value = '';
+            document.getElementById('sessionFormTitle').textContent = '1. Thiết Lập Ca Thi Mới';
+            document.getElementById('btnSaveSession').textContent = '+ Lưu Ca Thi';
+            document.getElementById('btnCancelEditSession').style.display = 'none';
+            document.getElementById('studentTimesBox').style.display = 'none';
+        }
+
+        // Bảng giờ thi riêng từng sinh viên trong form sửa ca thi
+        function renderStudentTimes(s) {
+            const box = document.getElementById('studentTimesBox');
+            const tbody = document.getElementById('studentTimesBody');
+            const rows = s.student_rows || [];
+            box.style.display = rows.length ? 'block' : 'none';
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                const custom = r.start_ts > 0 || r.duration_minutes > 0;
+                const tr = document.createElement('tr');
+                if (custom) tr.className = 'table-warning';
+                tr.innerHTML = `
+                    <td style="vertical-align:middle;"><strong>${escapeHtml(r.student_code)}</strong></td>
+                    <td><input type="datetime-local" class="form-control form-control-sm stu-start" value="${r.start_input || s.start_input || ''}"></td>
+                    <td><input type="number" min="1" class="form-control form-control-sm stu-duration" value="${r.duration_minutes || ''}" placeholder="${s.duration_minutes}"></td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="btn btn-primary btn-sm py-0 px-2" style="font-size:11px;" data-act="save">Lưu</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1" style="font-size:11px;" data-act="shift" data-min="5">+5'</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1" style="font-size:11px;" data-act="shift" data-min="10">+10'</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size:11px;" data-act="reset">Mặc định</button>
+                    </td>`;
+                tr.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+                    const fd = new FormData();
+                    fd.append('session_id', s.id);
+                    fd.append('student_code', r.student_code);
+                    if (btn.dataset.act === 'shift') {
+                        fd.append('shift_minutes', btn.dataset.min);
+                    } else if (btn.dataset.act === 'save') {
+                        const start = tr.querySelector('.stu-start').value;
+                        fd.append('starts_at', start === s.start_input ? '' : start);
+                        fd.append('duration_minutes', tr.querySelector('.stu-duration').value);
+                    } else {
+                        fd.append('starts_at', '');
+                        fd.append('duration_minutes', '');
+                    }
+                    saveStudentTime(s.id, fd);
+                }));
+                tbody.appendChild(tr);
+            });
+        }
+
+        function saveStudentTime(sessionId, fd) {
+            fetch('dashboard.php?ajax_action=set_student_exam_time', { method: 'POST', body: fd })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 'success') { alert(data.message); return; }
+                    return fetch('dashboard.php?ajax_action=list_exam_sessions')
+                        .then(res => res.json())
+                        .then(list => {
+                            (list.data || []).forEach(x => { examSessionsById[x.id] = x; });
+                            if (examSessionsById[sessionId]) renderStudentTimes(examSessionsById[sessionId]);
+                        });
                 });
         }
 
@@ -1035,7 +1176,7 @@ $ws_config = require __DIR__ . '/../websocket_config.php';
                             <tr>
                                 <td><strong style="letter-spacing:1px; color:#003366; font-size:13.5px;">${escapeHtml(c.code)}</strong></td>
                                 <td><code>${escapeHtml(c.used_by || c.student_code || 'Chưa rõ')}</code></td>
-                                <td style="font-size:12px;"><strong>${escapeHtml(c.session_name || 'Ca #' + c.exam_session_id)}</strong></td>
+                                <td style="font-size:12px;"><strong>${c.session_name ? escapeHtml(c.session_name) : `<span class="text-danger">Ca #${c.exam_session_id} (không tồn tại)</span>`}</strong></td>
                                 <td>${usedTime}</td>
                                 <td>${stBadge}</td>
                             </tr>

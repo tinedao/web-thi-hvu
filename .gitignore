@@ -6,3 +6,7 @@ data/*.sqlite-shm
 backup/*.zip
 .DS_Store
 Thumbs.db
+data/master_auth.php
+data/site_disabled.lock
+data/*.lock
+data/*.log

@@ -1,9 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/site_guard.php'; // Website tắt -> 404
 // portal.php - Cổng thông tin khảo thí Đại học Hùng Vương (HVU)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/exam_schema.php';
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['student_id']) || !isset($_SESSION['fullname'])) {
@@ -14,6 +16,52 @@ if (!isset($_SESSION['student_id']) || !isset($_SESSION['fullname'])) {
 $student_id = $_SESSION['student_id'];
 $fullname = $_SESSION['fullname'];
 $role = $_SESSION['role'] ?? 'exam';
+
+// AJAX của popup chat (tải tin nhắn dự phòng khi WebSocket gián đoạn)
+if (isset($_GET['ajax_action'])) {
+    require_once __DIR__ . '/../includes/ajax_handler.php';
+    exit;
+}
+
+// Tạo phòng chat hỗ trợ cho sinh viên (1 lần mỗi phiên đăng nhập) và gắn vào token WebSocket
+function portal_ensure_chat($student_id, $fullname, $label) {
+    $now = time();
+    if (empty($_SESSION['chat_id'])) {
+        $chat_id = uniqid('chat_');
+        $chat_name = $fullname . ' (' . $student_id . ') - ' . $label;
+        $_SESSION['chat_id'] = $chat_id;
+        try {
+            db_insert('chats', ['id' => $chat_id, 'name' => $chat_name, 'status' => 'attached', 'created_at' => $now]);
+        } catch (Exception $e) {}
+        try {
+            get_chat_db()->prepare("INSERT OR REPLACE INTO chats (id, name, student_id, status, created_at, updated_at) VALUES (?, ?, ?, 'attached', ?, ?)")
+                         ->execute([$chat_id, $chat_name, $student_id, $now, $now]);
+        } catch (Exception $e) {}
+    }
+    $chat_id = $_SESSION['chat_id'];
+
+    if (empty($_SESSION['ws_token'])) {
+        $_SESSION['ws_token'] = bin2hex(random_bytes(16));
+    }
+    if (($_SESSION['ws_token_chat'] ?? '') !== $chat_id) {
+        try {
+            db_query("UPDATE `user_tokens` SET `chat_id` = ? WHERE `token` = ?", [$chat_id, $_SESSION['ws_token']]);
+        } catch (Exception $e) {}
+        try {
+            get_chat_db()->prepare("INSERT OR REPLACE INTO user_tokens (token, user_id, role, chat_id, created_at) VALUES (?, ?, 'exam', ?, ?)")
+                         ->execute([$_SESSION['ws_token'], $student_id, $chat_id, $now]);
+        } catch (Exception $e) {}
+        $_SESSION['ws_token_chat'] = $chat_id;
+    }
+    return $chat_id;
+}
+
+// Lấy giờ thi hiện tại (để trang tự cập nhật khi người hỗ trợ đổi giờ thi / danh sách)
+if (isset($_GET['ajax_sessions'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['status' => 'success', 'signature' => exam_sessions_signature(exam_sessions_for_student($student_id))]);
+    exit;
+}
 
 // Xử lý xác minh mã dự thi qua AJAX
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_verify_code'])) {
@@ -26,27 +74,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_verify_code'])) 
         exit;
     }
 
-    // Lấy ca thi tương ứng hoặc ca thi đang mở mới nhất
-    if ($sessionId > 0) {
-        $session = db_fetch("SELECT * FROM `exam_sessions` WHERE `id` = ?", [$sessionId]);
-    } else {
-        $session = db_fetch("SELECT * FROM `exam_sessions` WHERE `is_active` = 1 ORDER BY `id` DESC LIMIT 1");
-    }
-
-    // Nếu hệ thống chưa tạo ca thi nào, tạo một phiên mặc định
+    // Chỉ cho vào ca thi đã được gán cho chính sinh viên này
+    $session = exam_session_for_student($sessionId, $student_id);
     if (!$session) {
-        $files = glob(dirname(__DIR__) . '/exams/*.json') ?: [];
-        $sampleFile = !empty($files) ? basename($files[0]) : 'dau_tu_chung_khoan.json';
-        $session = [
-            'id' => 1,
-            'name' => basename($sampleFile, '.json'),
-            'exam_json' => $sampleFile,
-            'duration_minutes' => 45,
-            'starts_at' => date('d/m/Y - H:i')
-        ];
+        echo json_encode(['status' => 'error', 'message' => 'Bạn không có trong danh sách thi của ca thi này!']);
+        exit;
     }
 
     $now = time();
+    $startTs = (int)($session['start_ts'] ?? 0);
+    $endTs = $startTs + (int)$session['duration_minutes'] * 60;
+    if ($startTs > 0 && $now < $startTs) {
+        echo json_encode(['status' => 'error', 'message' => 'Chưa đến giờ thi!']);
+        exit;
+    }
+    if ($startTs > 0 && $now >= $endTs) {
+        echo json_encode(['status' => 'error', 'message' => 'Ca thi đã kết thúc!']);
+        exit;
+    }
 
     // Mã do sinh viên nhập từ bên ngoài: KHÔNG CẦN CHECK, lưu lại để gửi cho hỗ trợ
     try {
@@ -60,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_verify_code'])) 
             'created_at' => $now
         ]);
     } catch (Exception $e) {
-        db_query("UPDATE `exam_codes` SET `exam_session_id` = ?, `status` = 'in_progress', `used_by` = ?, `used_at` = ? WHERE `code` = ?", 
+        db_query("UPDATE `exam_codes` SET `exam_session_id` = ?, `status` = 'in_progress', `used_by` = ?, `used_at` = ? WHERE `code` = ?",
                  [$session['id'], $student_id, $now, $code]);
     }
 
@@ -73,20 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_verify_code'])) 
     $_SESSION['exam_id'] = $session['name'];
     $_SESSION['exam_start_time'] = $now;
 
-    // Khởi tạo phòng chat hỗ trợ gắn với mã thi
-    if (empty($_SESSION['chat_id'])) {
-        $chat_id = uniqid('chat_');
-        $chat_name = $fullname . ' (' . $student_id . ') - ' . $session['name'];
-        $_SESSION['chat_id'] = $chat_id;
-        try {
-            db_insert('chats', ['id' => $chat_id, 'name' => $chat_name, 'status' => 'attached', 'created_at' => $now]);
-            $chatDb = get_chat_db();
-            $chatDb->prepare("INSERT OR REPLACE INTO chats (id, name, student_id, status, created_at, updated_at) VALUES (?, ?, ?, 'attached', ?, ?)")
-                   ->execute([$chat_id, $chat_name, $student_id, $now, $now]);
-        } catch (Exception $e) {}
-    } else {
-        $chat_id = $_SESSION['chat_id'];
-    }
+    // Phòng chat hỗ trợ (đã tạo sẵn khi vào Cổng thi)
+    $chat_id = portal_ensure_chat($student_id, $fullname, $session['name']);
 
     // Gửi thông báo mã thi cho người hỗ trợ
     $sysMsg = "🔑 Thí sinh vào thi môn [{$session['name']}], Mã ca thi: {$code}";
@@ -104,22 +137,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_verify_code'])) 
                ->execute([$chat_id, $sysMsg, $now]);
     } catch (Exception $e) {}
 
-    // Cập nhật token WebSocket
-    if (!empty($_SESSION['ws_token'])) {
-        try {
-            db_query("UPDATE `user_tokens` SET `chat_id` = ? WHERE `token` = ?", [$chat_id, $_SESSION['ws_token']]);
-            $chatDb = get_chat_db();
-            $chatDb->prepare("INSERT OR REPLACE INTO user_tokens (token, user_id, role, chat_id, created_at) VALUES (?, ?, 'exam', ?, ?)")
-                   ->execute([$_SESSION['ws_token'], $student_id, $chat_id, $now]);
-        } catch (Exception $e) {}
-    }
-
     echo json_encode(['status' => 'success', 'redirect' => 'index.php']);
     exit;
 }
 
-// Lấy danh sách ca thi đang mở để hiển thị trên giao diện Cổng thi fake
-$activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` = 1 ORDER BY `id` DESC");
+// Danh sách ca thi đang mở được gán cho sinh viên đang đăng nhập
+$activeSessions = exam_sessions_for_student($student_id);
+$serverNow = time();
+
+// Vào Cổng thi là đã có sẵn phòng chat hỗ trợ
+$chat_id = portal_ensure_chat($student_id, $fullname, !empty($activeSessions) ? $activeSessions[0]['name'] : 'Cổng thi');
+$_SESSION['chat_sender'] = $_SESSION['chat_sender'] ?? $fullname;
+$ws_config = require __DIR__ . '/../websocket_config.php';
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -127,16 +156,10 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trường Đại học Hùng Vương - Cổng Khảo Thí</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* Nhúng font Inter WOFF2 chuẩn của trường */
-        @font-face {
-            font-family: 'Inter';
-            src: url('../assets/font/Inter-roman.var.20c8da8a92236b58.woff2') format('woff2');
-            font-weight: 100 900;
-            font-style: normal;
-            font-display: swap;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
@@ -146,112 +169,216 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
         html, body {
             height: 100%;
             width: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
         }
 
-        /* Nền chứa hình gear tech trắng mờ chuẩn 100% */
+        /* Nền chứa hình gear tech trắng mờ */
         body {
             background-color: #f7f9fa;
-            background-image: url('img/white-circle-gear-tech-fade.e8ee0bacff3e934c.jpg');
+            background-image: url('../assets/img/white-circle-gear-tech-fade.e8ee0bacff3e934c.jpg');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: cover;
-            display: flex;
-            flex-direction: column;
             position: relative;
+            color: #131920;
         }
 
-        /* Header chuẩn giao diện trường */
-        header.hvu-header {
-            width: 100%;
-            height: 68px;
-            padding: 0 28px;
+        /* Header */
+        .header-brand {
+            position: absolute;
+            top: 32px;
+            left: 31px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: transparent;
+            text-decoration: none;
+            user-select: none;
             z-index: 10;
         }
 
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            user-select: none;
-        }
-
         .header-brand img {
-            width: 44px;
-            height: 44px;
+            width: 56px;
+            height: 56px;
             object-fit: contain;
+            display: block;
         }
 
         .school-title {
-            color: #d32f2f;
-            font-size: 15.5px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+            margin-left: 17px;
+            color: #ed1d24;
+            font-size: 17px;
+            font-weight: 500;
+            line-height: 1;
             text-transform: uppercase;
+            white-space: nowrap;
+            position: relative;
+            top: -1px;
+            left: -1px;
         }
 
-        /* 3 Nút tròn dạng Pill bên phải */
         .header-actions {
+            position: absolute;
+            top: 31px;
+            right: 30px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 20px;
+            z-index: 10;
         }
 
         .btn-pill {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 8px 18px;
-            border-radius: 50px;
+            justify-content: center;
+            gap: 8px;
+            height: 36px;
+            padding: 0 15px;
+            border-radius: 18px;
             color: #ffffff;
-            font-size: 13.5px;
-            font-weight: 500;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1;
             text-decoration: none;
             border: none;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-            transition: opacity 0.2s, transform 0.1s;
+            white-space: nowrap;
         }
 
         .btn-pill:hover {
-            opacity: 0.92;
-            transform: translateY(-1px);
+            filter: brightness(0.95);
         }
 
         .btn-pill svg {
-            width: 15px;
-            height: 15px;
-            stroke-width: 2.2;
+            width: 16px;
+            height: 16px;
+            flex: 0 0 16px;
+            stroke-width: 2;
         }
 
-        .btn-blue {
-            background-color: #1976d2;
-        }
-
-        .btn-green {
-            background-color: #1e8e3e;
-        }
-
-        .btn-slate {
-            background-color: #546e7a;
-        }
+        .btn-blue { background-color: #3b82f6; }
+        .btn-green { background-color: #22c55e; gap: 5px; }
+        .btn-slate { background-color: #64748b; }
 
         /* Khu vực giữa màn hình */
         main.content-area {
-            flex: 1;
+            position: absolute;
+            inset: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            position: relative;
             z-index: 5;
+        }
+
+        .exam-list-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d2630;
+            line-height: 34px;
+            margin-bottom: 13px;
+            text-transform: uppercase;
+        }
+
+        table.exam-table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 1063px;
+            background: #ffffff;
+            font-size: 14px;
+            line-height: 20px;
+            color: #131920;
+        }
+
+        .exam-table th,
+        .exam-table td {
+            border: 1px solid #e3e3e3;
+            vertical-align: middle;
+        }
+
+        .exam-table th {
+            height: 39px;
+            background: #f6f7f8;
+            font-weight: 500;
+            text-align: center;
+            padding: 0 4px;
+        }
+
+        .exam-table td {
+            height: 58px;
+            padding: 8px 9px;
+            text-align: center;
+        }
+
+        .exam-table td.col-status {
+            padding: 0;
+        }
+
+        .exam-table td.col-session {
+            text-align: left;
+            padding-right: 4px;
+        }
+
+        .exam-table .cell-block {
+            display: inline-block;
+            text-align: left;
+            position: relative;
+            top: -1px;
+        }
+
+        .exam-table td.col-session .cell-block {
+            display: block;
+        }
+
+        .exam-table .sub {
+            color: #707070;
+        }
+
+        .exam-table .empty-row td {
+            color: #707070;
+        }
+
+        /* Nút trạng thái */
+        .status-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 120px;
+            height: 35px;
+            border: none;
+            border-radius: 4px;
+            background: #bec8d0;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1;
+            cursor: not-allowed;
+            user-select: none;
+        }
+
+        .status-btn .count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 23px;
+            padding: 0 5px;
+            min-width: 50px;
+            border-radius: 3px;
+            background: #ffffff;
+            color: #d82222;
+        }
+
+        .status-btn.ready {
+            background: #3b82f6;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .status-btn.ready:hover {
+            background: #2f74e6;
         }
 
         /* Banner thông báo không có ca thi */
@@ -264,156 +391,36 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             font-size: 14px;
             font-weight: 500;
             box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
-            cursor: pointer;
-            transition: all 0.2s;
             user-select: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .empty-exam-card:hover {
-            background-color: #c5dcfa;
-            border-color: #9ec5fe;
-            box-shadow: 0 3px 12px rgba(25, 118, 210, 0.16);
-            transform: translateY(-1px);
-        }
-
-        /* Danh sách ca thi / đợt thi chuẩn khảo thí */
-        .session-cards-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            width: 100%;
-            max-width: 440px;
-            padding: 0 16px;
-        }
-
-        .exam-session-card {
-            background: #ffffff;
-            border: 1.5px solid #d4e4fc;
-            border-radius: 12px;
-            padding: 22px 24px;
-            box-shadow: 0 4px 18px rgba(25, 118, 210, 0.08);
-            cursor: pointer;
-            transition: all 0.22s ease;
-            text-align: left;
-            position: relative;
-        }
-
-        .exam-session-card:hover {
-            border-color: #1976d2;
-            box-shadow: 0 8px 24px rgba(25, 118, 210, 0.16);
-            transform: translateY(-2px);
-        }
-
-        .card-badge {
-            display: inline-block;
-            background: #e3f2fd;
-            color: #1976d2;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-
-        .card-subject {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0d47a1;
-            margin-bottom: 12px;
-            line-height: 1.35;
-        }
-
-        .card-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 16px;
-            font-size: 13.5px;
-            color: #4b5563;
-        }
-
-        .card-meta .meta-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-meta .meta-label {
-            color: #6b7280;
-            font-weight: 500;
-            min-width: 75px;
-        }
-
-        .card-meta .meta-value {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .btn-card-action {
-            width: 100%;
-            padding: 10px;
-            background-color: #1976d2;
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 14.5px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(25, 118, 210, 0.25);
-            transition: background-color 0.2s;
-            text-align: center;
-        }
-
-        .btn-card-action:hover {
-            background-color: #1565c0;
-        }
-
-        /* Nút phụ mở popup */
-        .btn-open-code {
-            margin-top: 14px;
-            background: white;
-            border: 1px solid #ced4da;
-            color: #495057;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 7px 18px;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-            transition: all 0.2s;
-        }
-
-        .btn-open-code:hover {
-            background: #1976d2;
-            color: white;
-            border-color: #1976d2;
         }
 
         /* Footer góc dưới bên phải */
         .portal-version-tag {
             position: fixed;
-            bottom: 8px;
-            right: 12px;
+            bottom: 0;
+            right: 0;
             font-size: 11px;
-            color: #4b5563;
+            line-height: 15px;
+            color: #000000;
             display: flex;
             align-items: center;
-            gap: 5px;
             user-select: none;
             z-index: 10;
         }
 
         .portal-version-tag .dot {
-            width: 7px;
-            height: 7px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background-color: #22c55e;
+            background-color: #05c30c;
+            box-shadow: 0 0 4px #05c30c;
             display: inline-block;
+        }
+
+        .portal-version-tag .ver-text {
+            background: #e0e2e5;
+            padding: 1px 3px 0 2px;
+            line-height: 14px;
         }
 
         /* POPUP LÀM MỜ XUNG QUANH (BACKDROP BLUR) */
@@ -437,7 +444,6 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             visibility: visible;
         }
 
-        /* Popup Box tối giản: 1 input có border + 1 nút Vào thi */
         .modal-box {
             background: #ffffff;
             border-radius: 12px;
@@ -472,10 +478,10 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             color: #333;
         }
 
-        /* Input có border */
         .modal-input {
             width: 100%;
             padding: 13px 16px;
+            font-family: inherit;
             font-size: 16px;
             font-weight: 600;
             letter-spacing: 1px;
@@ -485,7 +491,6 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             border: 1.5px solid #ced4da;
             border-radius: 8px;
             outline: none;
-            box-sizing: border-box;
             transition: border-color 0.2s, box-shadow 0.2s;
             margin-bottom: 15px;
         }
@@ -500,7 +505,6 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
         }
 
-        /* Nút Vào thi */
         .btn-enter-exam {
             width: 100%;
             padding: 13px;
@@ -508,6 +512,7 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             color: #ffffff;
             border: none;
             border-radius: 8px;
+            font-family: inherit;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
@@ -523,6 +528,21 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             transform: scale(0.98);
         }
 
+        /* Vùng bấm ẩn trên logo + chat nằm trên lớp làm mờ của popup nhập mã */
+        .logo-chat-hotspot {
+            position: fixed;
+            top: 32px;
+            left: 31px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            z-index: 1050;
+        }
+
+        .chat-popup {
+            z-index: 1100 !important;
+        }
+
         .modal-error {
             color: #dc3545;
             font-size: 12.5px;
@@ -534,91 +554,128 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
 </head>
 <body>
 
-    <!-- Header chuẩn tuyệt đối theo ảnh -->
-    <header class="hvu-header">
-        <div class="header-brand">
-            <img src="../assets/img/logo.png" alt="HVU Logo">
-            <span class="school-title">TRƯỜNG ĐẠI HỌC HÙNG VƯƠNG</span>
-        </div>
+    <!-- Header -->
+    <div class="header-brand">
+        <img src="../assets/img/logo.png" alt="HVU Logo">
+        <span class="school-title">TRƯỜNG ĐẠI HỌC HÙNG VƯƠNG</span>
+    </div>
+    <!-- Vùng bấm ẩn trùng vị trí logo: mở/đóng chat hỗ trợ, bấm được cả khi popup nhập mã đang làm mờ nền -->
+    <div class="logo-chat-hotspot" onclick="toggleChatPopup()"></div>
 
-        <div class="header-actions">
-            <!-- 1. Bảng điều khiển (Xanh lam) -->
-            <a href="dashboard.php" class="btn-pill btn-blue" title="Bảng điều khiển giám thị / hỗ trợ">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <span>Bảng điều khiển</span>
-            </a>
+    <div class="header-actions">
+        <a href="dashboard.php" class="btn-pill btn-blue" title="Bảng điều khiển">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6"></path>
+                <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4"></path>
+            </svg>
+            <span>Bảng điều khiển</span>
+        </a>
 
-            <!-- 2. Hướng dẫn làm bài thi (Xanh lá) -->
-            <button type="button" class="btn-pill btn-green" onclick="showGuide()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>Hướng dẫn làm bài thi</span>
-            </button>
+        <button type="button" class="btn-pill btn-green" onclick="showGuide()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path>
+                <path d="M7 11l5 5l5 -5"></path>
+                <path d="M12 4l0 12"></path>
+            </svg>
+            <span>Hướng dẫn làm bài thi</span>
+        </button>
 
-            <!-- 3. Đăng xuất (Xám chì) -->
-            <a href="logout.php" class="btn-pill btn-slate">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span>Đăng xuất</span>
-            </a>
-        </div>
-    </header>
+        <a href="logout.php" class="btn-pill btn-slate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Đăng xuất</span>
+        </a>
+    </div>
 
-    <!-- Khu vực chính giữa: Khung thông báo ca thi hoặc danh sách ca thi -->
+    <!-- Khu vực chính giữa: Danh sách ca thi của sinh viên -->
     <main class="content-area">
         <?php if (!empty($activeSessions)): ?>
-            <div class="session-cards-wrapper">
-                <?php foreach ($activeSessions as $ses): ?>
-                    <div class="exam-session-card" onclick="openExamModal(<?= (int)$ses['id'] ?>)">
-                        <div class="card-badge">CA THI TRỰC TUYẾN</div>
-                        <div class="card-subject"><?= htmlspecialchars($ses['name']) ?></div>
-                        <div class="card-meta">
-                            <div class="meta-row">
-                                <span class="meta-label">Ngày thi:</span>
-                                <span class="meta-value"><?= htmlspecialchars($ses['starts_at'] ?: date('d/m/Y - H:i')) ?></span>
+            <div class="exam-list-title">DANH SÁCH CA THI KTHP - TRẮC NGHIỆM</div>
+            <table class="exam-table">
+                <colgroup>
+                    <col style="width:50px">
+                    <col style="width:413px">
+                    <col style="width:130px">
+                    <col style="width:150px">
+                    <col style="width:100px">
+                    <col style="width:90px">
+                    <col style="width:130px">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ca thi</th>
+                        <th>Năm học</th>
+                        <th>Thời gian</th>
+                        <th>Hình thức</th>
+                        <th>Thời lượng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($activeSessions as $i => $ses):
+                        $startTs = (int)($ses['start_ts'] ?? 0);
+                        $title = trim($ses['code'] ?? '') !== '' ? $ses['code'] : $ses['name'];
+                    ?>
+                    <tr>
+                        <td><?= $i + 1 ?></td>
+                        <td class="col-session">
+                            <div class="cell-block">
+                                <div><?= htmlspecialchars($title) ?></div>
+                                <div class="sub"><?= htmlspecialchars($ses['batch_name'] ?: 'Đợt thi 1') ?></div>
                             </div>
-                            <div class="meta-row">
-                                <span class="meta-label">Thời gian:</span>
-                                <span class="meta-value"><?= (int)$ses['duration_minutes'] ?> phút</span>
+                        </td>
+                        <td>
+                            <div class="cell-block">
+                                <div><?= htmlspecialchars($ses['school_year'] ?? '') ?></div>
+                                <div class="sub"><?= htmlspecialchars($ses['semester'] ?? '') ?></div>
                             </div>
-                        </div>
-                        <button type="button" class="btn-card-action">Vào thi</button>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+                        </td>
+                        <td>
+                            <div class="cell-block">
+                                <?php if ($startTs > 0): ?>
+                                    <div><?= date('d-m-Y', $startTs) ?></div>
+                                    <div class="sub"><?= date('g:i A', $startTs) ?></div>
+                                <?php else: ?>
+                                    <div><?= htmlspecialchars($ses['starts_at'] ?? '') ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td><?= htmlspecialchars($ses['exam_form'] ?: 'Trắc nghiệm') ?></td>
+                        <td><?= (int)$ses['duration_minutes'] ?> phút</td>
+                        <td class="col-status">
+                            <button type="button" class="status-btn"
+                                    data-session-id="<?= (int)$ses['id'] ?>"
+                                    data-start="<?= $startTs ?>"
+                                    data-end="<?= $startTs > 0 ? $startTs + (int)$ses['duration_minutes'] * 60 : 0 ?>">
+                                <span>Còn lại</span><span class="count">--:--</span>
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         <?php else: ?>
-            <div class="empty-exam-card" onclick="openExamModal(0)" title="Nhấn để nhập mã ca thi">
+            <div class="empty-exam-card">
                 <span>Hiện tại bạn không có ca thi nào!</span>
             </div>
-            <button type="button" class="btn-open-code" onclick="openExamModal(0)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;vertical-align:-2px;margin-right:6px;stroke-width:2.2;">
-                    <path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5-2 2 1.5 1.5-3 3a5.5 5.5 0 1 1-1.4-1.4l3-3-1.5-1.5 2-2 1.5 1.5 3.5-3.5z"></path>
-                    <circle cx="7.5" cy="16.5" r="1.5"></circle>
-                </svg>
-                <span>Nhập mã ca thi</span>
-            </button>
         <?php endif; ?>
     </main>
 
     <!-- Phiên bản góc dưới bên phải -->
     <div class="portal-version-tag">
         <span class="dot"></span>
-        <span>V2.2.19 (UTC+07)</span>
+        <span class="ver-text">V3.2.89 (UTC+07)</span>
     </div>
 
     <!-- POPUP LÀM MỜ NỀN: NHẬP MÃ THI + NÚT VÀO THI -->
     <div id="examModalOverlay" class="modal-overlay" onclick="handleOverlayClick(event)">
         <div class="modal-box" onclick="event.stopPropagation()">
             <button class="modal-close-btn" onclick="closeExamModal()">&times;</button>
-            
+
             <form id="codeForm" onsubmit="submitExamCode(event)">
                 <input type="text" id="popupExamCode" class="modal-input" placeholder="Nhập mã ca thi..." autocomplete="off" autofocus>
                 <div id="modalErrorMsg" class="modal-error" style="display:none;"></div>
@@ -630,7 +687,58 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
     <script>
         let currentSessionId = 0;
 
-        function openExamModal(sessionId = 0) {
+        // Đồng hồ đếm ngược tới giờ thi (lệch giờ máy khách được bù theo giờ máy chủ)
+        const serverOffset = <?= $serverNow ?> * 1000 - Date.now();
+
+        function pad2(n) { return String(n).padStart(2, '0'); }
+
+        function updateStatusButtons() {
+            const now = Math.floor((Date.now() + serverOffset) / 1000);
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                const start = parseInt(btn.dataset.start, 10) || 0;
+                const end = parseInt(btn.dataset.end, 10) || 0;
+                let state;
+                if (start > 0 && now < start) state = 'wait';
+                else if (end > 0 && now >= end) state = 'ended';
+                else state = 'ready';
+
+                if (state === 'wait') {
+                    const left = start - now;
+                    const text = Math.floor(left / 60) + ':' + pad2(left % 60);
+                    if (btn.dataset.state !== 'wait') {
+                        btn.className = 'status-btn';
+                        btn.innerHTML = '<span>Còn lại</span><span class="count"></span>';
+                    }
+                    btn.querySelector('.count').textContent = text;
+                } else if (btn.dataset.state !== state) {
+                    btn.className = 'status-btn' + (state === 'ready' ? ' ready' : '');
+                    btn.textContent = state === 'ready' ? 'Vào thi' : 'Đã kết thúc';
+                }
+                btn.dataset.state = state;
+            });
+        }
+
+        document.querySelectorAll('.status-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.state === 'ready') openExamModal(parseInt(btn.dataset.sessionId, 10));
+            });
+        });
+        updateStatusButtons();
+        setInterval(updateStatusButtons, 1000);
+
+        // Người hỗ trợ đổi giờ thi / danh sách -> tải lại trang để cập nhật (trừ khi đang nhập mã)
+        const sessionsSignature = <?= json_encode(exam_sessions_signature($activeSessions)) ?>;
+        setInterval(() => {
+            if (document.getElementById('examModalOverlay').classList.contains('active')) return;
+            fetch('portal.php?ajax_sessions=1', { cache: 'no-store' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.signature !== sessionsSignature) location.reload();
+                })
+                .catch(() => {});
+        }, 15000);
+
+        function openExamModal(sessionId) {
             currentSessionId = sessionId;
             const overlay = document.getElementById('examModalOverlay');
             overlay.classList.add('active');
@@ -680,7 +788,7 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
             const fd = new FormData();
             fd.append('ajax_verify_code', '1');
             fd.append('exam_code', code);
-            if (currentSessionId) fd.append('session_id', currentSessionId);
+            fd.append('session_id', currentSessionId);
 
             fetch('portal.php', {
                 method: 'POST',
@@ -710,8 +818,28 @@ $activeSessions = db_fetch_all("SELECT * FROM `exam_sessions` WHERE `is_active` 
         }
 
         function showGuide() {
-            alert("HƯỚNG DẪN LÀM BÀI THI TRỰC TUYẾN:\n\n1. Nhập đúng mã ca thi được cấp bởi cán bộ coi thi.\n2. Bấm 'Vào thi' để bắt đầu làm bài trắc nghiệm.\n3. Đồng hồ đếm ngược được duy trì trên máy chủ (F5 không reset giờ).\n4. Thí sinh có thể nhấn vào ảnh đại diện để mở khung chat hỗ trợ.");
+            alert("HƯỚNG DẪN LÀM BÀI THI TRỰC TUYẾN:\n\n1. Khi đến giờ thi, bấm 'Vào thi' ở ca thi của bạn.\n2. Nhập đúng mã ca thi được cấp bởi cán bộ coi thi.\n3. Đồng hồ đếm ngược được duy trì trên máy chủ (F5 không reset giờ).\n4. Thí sinh có thể nhấn vào ảnh đại diện để mở khung chat hỗ trợ.");
         }
     </script>
+
+    <!-- Popup chat hỗ trợ (ẩn, mở bằng cách bấm logo) -->
+    <?php include __DIR__ . '/../includes/chat_popup.php'; ?>
+    <script>
+        const sessionChatId = <?= json_encode($chat_id) ?>;
+        const currentUser = <?= json_encode($_SESSION['chat_sender']) ?>;
+        const currentUserId = <?= json_encode($student_id) ?>;
+        const wsToken = <?= json_encode($_SESSION['ws_token'] ?? '') ?>;
+        const wsConfigUrl = <?= json_encode($ws_config['client_url']) ?>;
+        window.examInfo = {
+            student: <?= json_encode($fullname) ?>,
+            examId: '',
+            subject: <?= json_encode(!empty($activeSessions) ? $activeSessions[0]['name'] : 'Cổng thi') ?>
+        };
+        window.chatStartHidden = true;
+        window.chatAjaxUrl = 'portal.php';
+    </script>
+    <script src="../assets/js/websocket-client.js?v=<?= time() ?>"></script>
+    <script src="../assets/js/chat.js?v=<?= time() ?>"></script>
+    <script>initChatSystem();</script>
 </body>
 </html>

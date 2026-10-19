@@ -1,0 +1,1037 @@
+[
+  {
+    "id": 1,
+    "question": "Câu 1: IoT là viết tắt của cụm từ nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Internet of Things"
+      },
+      {
+        "id": "B",
+        "text": "Integration of Technology"
+      },
+      {
+        "id": "C",
+        "text": "Internet of Technology"
+      },
+      {
+        "id": "D",
+        "text": "Interface of Things"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 2,
+    "question": "Câu 2: Đặc điểm cốt lõi của hệ thống IoT là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Các thiết bị kết nối và trao đổi dữ liệu qua mạng"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ xử lý dữ liệu ngoại tuyến"
+      },
+      {
+        "id": "C",
+        "text": "Chỉ dùng máy tính cá nhân"
+      },
+      {
+        "id": "D",
+        "text": "Không sử dụng cảm biến"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 3,
+    "question": "Câu 3: Thành phần nào thường dùng để thu thập dữ liệu môi trường trong IoT?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cảm biến"
+      },
+      {
+        "id": "B",
+        "text": "Màn hình"
+      },
+      {
+        "id": "C",
+        "text": "Loa"
+      },
+      {
+        "id": "D",
+        "text": "Bàn phím"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 4,
+    "question": "Câu 4: Vi điều khiển thường đảm nhiệm vai trò nào trong thiết bị IoT?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Đọc tín hiệu, xử lý và điều khiển thiết bị"
+      },
+      {
+        "id": "B",
+        "text": "Lưu trữ dữ liệu vô hạn"
+      },
+      {
+        "id": "C",
+        "text": "Cung cấp Internet cho toàn bộ thành phố"
+      },
+      {
+        "id": "D",
+        "text": "Thay thế hoàn toàn máy chủ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 5,
+    "question": "Câu 5: Arduino Uno thường sử dụng vi điều khiển nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "ATmega328P"
+      },
+      {
+        "id": "B",
+        "text": "ESP8266"
+      },
+      {
+        "id": "C",
+        "text": "STM32F7"
+      },
+      {
+        "id": "D",
+        "text": "Raspberry Pi 4"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 6,
+    "question": "Câu 6: ESP8266 có tích hợp sẵn công nghệ kết nối không dây nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wi-Fi"
+      },
+      {
+        "id": "B",
+        "text": "Bluetooth 5.3"
+      },
+      {
+        "id": "C",
+        "text": "Zigbee"
+      },
+      {
+        "id": "D",
+        "text": "NFC"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 7,
+    "question": "Câu 7: ESP32 nổi bật với khả năng tích hợp những kết nối nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wi-Fi và Bluetooth"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ Ethernet"
+      },
+      {
+        "id": "C",
+        "text": "Chỉ NFC"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ hồng ngoại"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 8,
+    "question": "Câu 8: GPIO là viết tắt của cụm từ nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "General Purpose Input/Output"
+      },
+      {
+        "id": "B",
+        "text": "Global Program Internet Output"
+      },
+      {
+        "id": "C",
+        "text": "General Process Internal Operation"
+      },
+      {
+        "id": "D",
+        "text": "Graphical Pin Input Option"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 9,
+    "question": "Câu 9: Chân GPIO được cấu hình INPUT thường dùng để làm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Đọc tín hiệu từ cảm biến hoặc nút nhấn"
+      },
+      {
+        "id": "B",
+        "text": "Xuất tín hiệu điều khiển LED"
+      },
+      {
+        "id": "C",
+        "text": "Cấp nguồn chính cho bo mạch"
+      },
+      {
+        "id": "D",
+        "text": "Lưu chương trình"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 10,
+    "question": "Câu 10: Chân GPIO được cấu hình OUTPUT thường dùng để làm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Điều khiển LED, relay hoặc thiết bị khác"
+      },
+      {
+        "id": "B",
+        "text": "Đo nhiệt độ trực tiếp"
+      },
+      {
+        "id": "C",
+        "text": "Nhận dữ liệu GPS mà không có module"
+      },
+      {
+        "id": "D",
+        "text": "Kết nối cơ học"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 11,
+    "question": "Câu 11: Trong Arduino, hàm setup() được thực thi khi nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Một lần khi khởi động hoặc reset"
+      },
+      {
+        "id": "B",
+        "text": "Liên tục trong suốt chương trình"
+      },
+      {
+        "id": "C",
+        "text": "Chỉ khi có dữ liệu Wi-Fi"
+      },
+      {
+        "id": "D",
+        "text": "Mỗi lần nhấn nút bất kỳ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 12,
+    "question": "Câu 12: Trong Arduino, hàm loop() có chức năng gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Lặp lại các lệnh chính của chương trình"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ khai báo thư viện"
+      },
+      {
+        "id": "C",
+        "text": "Chạy đúng một lần"
+      },
+      {
+        "id": "D",
+        "text": "Biên dịch mã nguồn"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 13,
+    "question": "Câu 13: Lệnh pinMode(pin, OUTPUT) dùng để làm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cấu hình chân thành ngõ ra"
+      },
+      {
+        "id": "B",
+        "text": "Đọc giá trị analog"
+      },
+      {
+        "id": "C",
+        "text": "Gửi dữ liệu MQTT"
+      },
+      {
+        "id": "D",
+        "text": "Đặt tốc độ Serial"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 14,
+    "question": "Câu 14: Lệnh digitalWrite(pin, HIGH) thường tạo ra trạng thái nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mức logic cao tại chân được chọn"
+      },
+      {
+        "id": "B",
+        "text": "Mức logic thấp"
+      },
+      {
+        "id": "C",
+        "text": "Đọc điện áp analog"
+      },
+      {
+        "id": "D",
+        "text": "Khởi động Wi-Fi"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 15,
+    "question": "Câu 15: Hàm analogRead() trên Arduino Uno thường trả về giá trị trong khoảng nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "0 đến 1023"
+      },
+      {
+        "id": "B",
+        "text": "0 đến 255"
+      },
+      {
+        "id": "C",
+        "text": "0 đến 4095"
+      },
+      {
+        "id": "D",
+        "text": "−1 đến 1"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 16,
+    "question": "Câu 16: PWM thường được sử dụng để làm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Điều chỉnh công suất trung bình như độ sáng LED hoặc tốc độ động cơ"
+      },
+      {
+        "id": "B",
+        "text": "Định tuyến gói tin IP"
+      },
+      {
+        "id": "C",
+        "text": "Mã hóa mật khẩu Wi-Fi"
+      },
+      {
+        "id": "D",
+        "text": "Đo khoảng cách bằng sóng siêu âm"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 17,
+    "question": "Câu 17: Cảm biến DHT11 thường đo đại lượng nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Nhiệt độ và độ ẩm"
+      },
+      {
+        "id": "B",
+        "text": "Ánh sáng và màu sắc"
+      },
+      {
+        "id": "C",
+        "text": "Áp suất và độ cao"
+      },
+      {
+        "id": "D",
+        "text": "Khoảng cách và vận tốc"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 18,
+    "question": "Câu 18: Cảm biến siêu âm HC-SR04 thường được dùng để đo gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Khoảng cách"
+      },
+      {
+        "id": "B",
+        "text": "Độ ẩm đất"
+      },
+      {
+        "id": "C",
+        "text": "Cường độ dòng điện"
+      },
+      {
+        "id": "D",
+        "text": "Nồng độ khí CO₂"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 19,
+    "question": "Câu 19: Cảm biến ánh sáng LDR thay đổi đặc tính điện chủ yếu theo yếu tố nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cường độ ánh sáng"
+      },
+      {
+        "id": "B",
+        "text": "Độ mặn"
+      },
+      {
+        "id": "C",
+        "text": "Áp suất khí quyển"
+      },
+      {
+        "id": "D",
+        "text": "Tốc độ mạng"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 20,
+    "question": "Câu 20: Relay trong hệ thống IoT thường có tác dụng gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Đóng/ngắt tải điện bằng tín hiệu điều khiển"
+      },
+      {
+        "id": "B",
+        "text": "Đo nhiệt độ"
+      },
+      {
+        "id": "C",
+        "text": "Mã hóa dữ liệu"
+      },
+      {
+        "id": "D",
+        "text": "Khuếch đại tín hiệu Wi-Fi"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 21,
+    "question": "Câu 21: I2C là giao tiếp nối tiếp thường sử dụng bao nhiêu đường tín hiệu chính?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hai"
+      },
+      {
+        "id": "B",
+        "text": "Một"
+      },
+      {
+        "id": "C",
+        "text": "Ba"
+      },
+      {
+        "id": "D",
+        "text": "Bốn"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 22,
+    "question": "Câu 22: Hai đường tín hiệu chính của I2C là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "SDA và SCL"
+      },
+      {
+        "id": "B",
+        "text": "MOSI và MISO"
+      },
+      {
+        "id": "C",
+        "text": "TX và RX"
+      },
+      {
+        "id": "D",
+        "text": "CLK và CS"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 23,
+    "question": "Câu 23: Giao tiếp SPI thường có ưu điểm nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tốc độ truyền thường cao và hỗ trợ truyền song công"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ cần một dây tín hiệu"
+      },
+      {
+        "id": "C",
+        "text": "Không cần xung clock"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ truyền được dữ liệu văn bản"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 24,
+    "question": "Câu 24: UART thường sử dụng các đường tín hiệu nào để truyền nhận dữ liệu?",
+    "options": [
+      {
+        "id": "A",
+        "text": "TX và RX"
+      },
+      {
+        "id": "B",
+        "text": "SDA và SCL"
+      },
+      {
+        "id": "C",
+        "text": "MOSI và MISO"
+      },
+      {
+        "id": "D",
+        "text": "SCK và CS"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 25,
+    "question": "Câu 25: Wi-Fi trong IoT thường được dùng để làm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Kết nối thiết bị với mạng IP không dây"
+      },
+      {
+        "id": "B",
+        "text": "Đo nhiệt độ"
+      },
+      {
+        "id": "C",
+        "text": "Lưu dữ liệu vào bộ nhớ flash"
+      },
+      {
+        "id": "D",
+        "text": "Thay thế cảm biến"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 26,
+    "question": "Câu 26: Địa chỉ IP có vai trò gì trong mạng?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Định danh giao diện thiết bị để giao tiếp IP"
+      },
+      {
+        "id": "B",
+        "text": "Xác định loại cảm biến"
+      },
+      {
+        "id": "C",
+        "text": "Đặt điện áp GPIO"
+      },
+      {
+        "id": "D",
+        "text": "Mã hóa toàn bộ chương trình"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 27,
+    "question": "Câu 27: MQTT là giao thức thuộc mô hình giao tiếp nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Publish/Subscribe"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ Request/Response"
+      },
+      {
+        "id": "C",
+        "text": "Token Ring"
+      },
+      {
+        "id": "D",
+        "text": "Peer-to-peer không qua broker"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 28,
+    "question": "Câu 28: Trong MQTT, broker có nhiệm vụ gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Nhận và phân phối thông điệp giữa publisher và subscriber"
+      },
+      {
+        "id": "B",
+        "text": "Đo tín hiệu analog"
+      },
+      {
+        "id": "C",
+        "text": "Cấp nguồn cho cảm biến"
+      },
+      {
+        "id": "D",
+        "text": "Biên dịch chương trình vi điều khiển"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 29,
+    "question": "Câu 29: Trong MQTT, topic được dùng để làm gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Phân loại và định tuyến thông điệp"
+      },
+      {
+        "id": "B",
+        "text": "Mã hóa phần cứng"
+      },
+      {
+        "id": "C",
+        "text": "Đặt địa chỉ MAC"
+      },
+      {
+        "id": "D",
+        "text": "Điều chỉnh tần số CPU"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 30,
+    "question": "Câu 30: Thiết bị publish dữ liệu lên MQTT topic được gọi là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Publisher"
+      },
+      {
+        "id": "B",
+        "text": "Subscriber"
+      },
+      {
+        "id": "C",
+        "text": "Broker"
+      },
+      {
+        "id": "D",
+        "text": "Gateway"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 31,
+    "question": "Câu 31: Thiết bị đăng ký nhận dữ liệu từ MQTT topic được gọi là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Subscriber"
+      },
+      {
+        "id": "B",
+        "text": "Publisher"
+      },
+      {
+        "id": "C",
+        "text": "Compiler"
+      },
+      {
+        "id": "D",
+        "text": "Router"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 32,
+    "question": "Câu 32: HTTP thường sử dụng mô hình trao đổi nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Request/Response"
+      },
+      {
+        "id": "B",
+        "text": "Publish/Subscribe bắt buộc"
+      },
+      {
+        "id": "C",
+        "text": "Chỉ truyền dữ liệu một chiều"
+      },
+      {
+        "id": "D",
+        "text": "Giao tiếp không cần địa chỉ"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 33,
+    "question": "Câu 33: REST API thường dùng phương thức HTTP nào để lấy dữ liệu?",
+    "options": [
+      {
+        "id": "A",
+        "text": "GET"
+      },
+      {
+        "id": "B",
+        "text": "DELETE"
+      },
+      {
+        "id": "C",
+        "text": "PATCH"
+      },
+      {
+        "id": "D",
+        "text": "CONNECT"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 34,
+    "question": "Câu 34: JSON thường được sử dụng trong IoT vì lý do nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Định dạng dữ liệu văn bản dễ đọc và trao đổi"
+      },
+      {
+        "id": "B",
+        "text": "Là giao thức truyền dẫn vật lý"
+      },
+      {
+        "id": "C",
+        "text": "Chỉ lưu được hình ảnh"
+      },
+      {
+        "id": "D",
+        "text": "Bắt buộc dùng cho mọi cảm biến"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 35,
+    "question": "Câu 35: Gateway trong kiến trúc IoT thường có vai trò gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Kết nối hoặc chuyển đổi dữ liệu giữa thiết bị và mạng/dịch vụ"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ hiển thị hình ảnh"
+      },
+      {
+        "id": "C",
+        "text": "Thay thế mọi cảm biến"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ cấp điện cho bo mạch"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 36,
+    "question": "Câu 36: Cloud platform trong IoT thường hỗ trợ chức năng nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Lưu trữ, xử lý và trực quan hóa dữ liệu từ xa"
+      },
+      {
+        "id": "B",
+        "text": "Chỉ đọc trạng thái một chân GPIO"
+      },
+      {
+        "id": "C",
+        "text": "Thay thế hoàn toàn kết nối mạng"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ nạp firmware qua USB"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 37,
+    "question": "Câu 37: Điện toán biên (edge computing) giúp ích gì cho hệ thống IoT?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Xử lý dữ liệu gần nguồn phát để giảm độ trễ và lưu lượng truyền"
+      },
+      {
+        "id": "B",
+        "text": "Bắt buộc chuyển mọi dữ liệu lên cloud"
+      },
+      {
+        "id": "C",
+        "text": "Loại bỏ hoàn toàn vi điều khiển"
+      },
+      {
+        "id": "D",
+        "text": "Chỉ dùng để thiết kế giao diện"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 38,
+    "question": "Câu 38: Vì sao cần xác thực thiết bị trong hệ thống IoT?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hạn chế thiết bị không được phép truy cập"
+      },
+      {
+        "id": "B",
+        "text": "Tăng độ sáng LED"
+      },
+      {
+        "id": "C",
+        "text": "Giảm số chân GPIO"
+      },
+      {
+        "id": "D",
+        "text": "Thay đổi chuẩn giao tiếp I2C"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 39,
+    "question": "Câu 39: Mật khẩu Wi-Fi của thiết bị IoT nên được xử lý như thế nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Bảo vệ và tránh công khai trong mã nguồn hoặc bản ghi"
+      },
+      {
+        "id": "B",
+        "text": "Đăng tải công khai để dễ chia sẻ"
+      },
+      {
+        "id": "C",
+        "text": "Dùng chung một mật khẩu mặc định vĩnh viễn"
+      },
+      {
+        "id": "D",
+        "text": "Gửi liên tục qua topic công khai"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 40,
+    "question": "Câu 40: Firmware là gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Phần mềm mức thấp chạy trên thiết bị phần cứng"
+      },
+      {
+        "id": "B",
+        "text": "Một loại cảm biến nhiệt độ"
+      },
+      {
+        "id": "C",
+        "text": "Giao thức định tuyến"
+      },
+      {
+        "id": "D",
+        "text": "Tên gọi khác của nguồn điện"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 41,
+    "question": "Câu 41: OTA trong IoT thường chỉ hoạt động nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cập nhật firmware qua mạng"
+      },
+      {
+        "id": "B",
+        "text": "Đo tín hiệu analog"
+      },
+      {
+        "id": "C",
+        "text": "Ghép nối dây I2C"
+      },
+      {
+        "id": "D",
+        "text": "Tạo nguồn điện xoay chiều"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 42,
+    "question": "Câu 42: Watchdog timer có tác dụng gì?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Phát hiện chương trình bị treo và hỗ trợ khởi động lại"
+      },
+      {
+        "id": "B",
+        "text": "Tăng dung lượng RAM"
+      },
+      {
+        "id": "C",
+        "text": "Đo khoảng cách"
+      },
+      {
+        "id": "D",
+        "text": "Mã hóa địa chỉ IP"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 43,
+    "question": "Câu 43: Debounce nút nhấn là kỹ thuật nhằm khắc phục vấn đề nào?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tín hiệu dội gây nhiều lần nhận nhấn"
+      },
+      {
+        "id": "B",
+        "text": "Mất kết nối DNS"
+      },
+      {
+        "id": "C",
+        "text": "Sai định dạng JSON"
+      },
+      {
+        "id": "D",
+        "text": "Nhiễu nguồn của relay בלבד"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 44,
+    "question": "Câu 44: Khi đọc cảm biến định kỳ, vì sao nên tránh dùng delay() quá dài trong một ứng dụng nhiều tác vụ?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Nó có thể chặn việc xử lý các tác vụ khác"
+      },
+      {
+        "id": "B",
+        "text": "Nó làm tăng số chân GPIO"
+      },
+      {
+        "id": "C",
+        "text": "Nó tự động xóa firmware"
+      },
+      {
+        "id": "D",
+        "text": "Nó vô hiệu hóa mọi giao thức mạng"
+      }
+    ],
+    "userAnswer": null
+  },
+  {
+    "id": 45,
+    "question": "Câu 45: Khi thiết kế hệ thống IoT dùng pin, yếu tố nào giúp tiết kiệm năng lượng?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Đưa thiết bị vào chế độ ngủ khi không cần hoạt động"
+      },
+      {
+        "id": "B",
+        "text": "Tăng tần suất gửi dữ liệu tối đa"
+      },
+      {
+        "id": "C",
+        "text": "Bật tất cả ngoại vi liên tục"
+      },
+      {
+        "id": "D",
+        "text": "Giữ màn hình luôn sáng"
+      }
+    ],
+    "userAnswer": null
+  }
+]

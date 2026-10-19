@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/site_guard.php'; // Website tắt -> 404
 // ajax_handler.php - Xử lý AJAX tập trung (Chat, Đề thi JSON, Đợt thi & Cấp mã)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -326,36 +327,124 @@ try {
     // === QUẢN LÝ ĐỢT THI (EXAM SESSIONS) ===
 
     if ($action === 'list_exam_sessions') {
+        require_once $rootDir . '/includes/exam_schema.php';
         $sessions = db_fetch_all("SELECT * FROM `exam_sessions` ORDER BY `id` DESC");
+        foreach ($sessions as &$s) {
+            $rows = db_fetch_all("SELECT `student_code`, `start_ts`, `duration_minutes` FROM `exam_session_students` WHERE `exam_session_id` = ? ORDER BY `student_code`", [$s['id']]);
+            $s['students'] = array_column($rows, 'student_code');
+            $s['student_rows'] = array_map(function ($r) {
+                return [
+                    'student_code' => $r['student_code'],
+                    'start_ts' => (int)$r['start_ts'],
+                    'start_input' => (int)$r['start_ts'] > 0 ? date('Y-m-d\TH:i', (int)$r['start_ts']) : '',
+                    'duration_minutes' => (int)$r['duration_minutes'],
+                ];
+            }, $rows);
+            $s['start_input'] = !empty($s['start_ts']) ? date('Y-m-d\TH:i', (int)$s['start_ts']) : '';
+        }
+        unset($s);
         echo json_encode(['status' => 'success', 'data' => $sessions]);
         exit;
     }
 
-    if ($action === 'create_exam_session' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $name = trim($_POST['name'] ?? '');
-        $room = trim($_POST['room'] ?? '');
-        $exam_json = trim($_POST['exam_json'] ?? '');
-        $duration = (int)($_POST['duration_minutes'] ?? 45);
-        $starts_at = trim($_POST['starts_at'] ?? '');
-        $ends_at = trim($_POST['ends_at'] ?? '');
-
-        if (empty($name) || empty($exam_json)) {
-            echo json_encode(['status' => 'error', 'message' => 'Vui lòng nhập tên đợt thi và chọn đề thi JSON']);
+    // Chỉnh giờ thi riêng cho 1 sinh viên (bù trễ do web thi delay theo từng tài khoản)
+    // starts_at rỗng + duration rỗng = quay về giờ chung; shift_minutes = dời giờ bắt đầu thêm N phút so với giờ hiện hành
+    if ($action === 'set_student_exam_time' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        require_once $rootDir . '/includes/exam_schema.php';
+        $sessionId = (int)($_POST['session_id'] ?? 0);
+        $code = strtoupper(trim($_POST['student_code'] ?? ''));
+        $row = db_fetch("SELECT a.*, s.start_ts AS session_start FROM `exam_session_students` a
+                         INNER JOIN `exam_sessions` s ON s.id = a.exam_session_id
+                         WHERE a.exam_session_id = ? AND UPPER(a.student_code) = ?", [$sessionId, $code]);
+        if (!$row) {
+            echo json_encode(['status' => 'error', 'message' => 'Sinh viên không có trong ca thi này']);
             exit;
         }
 
-        db_insert('exam_sessions', [
+        if (isset($_POST['shift_minutes'])) {
+            $current = (int)$row['start_ts'] > 0 ? (int)$row['start_ts'] : (int)$row['session_start'];
+            $startTs = $current + (int)$_POST['shift_minutes'] * 60;
+            $duration = (int)$row['duration_minutes'];
+        } else {
+            $startStr = trim($_POST['starts_at'] ?? '');
+            $startTs = $startStr === '' ? 0 : exam_parse_datetime($startStr);
+            if ($startStr !== '' && !$startTs) {
+                echo json_encode(['status' => 'error', 'message' => 'Giờ bắt đầu không hợp lệ']);
+                exit;
+            }
+            $duration = max(0, (int)($_POST['duration_minutes'] ?? 0));
+        }
+        // Trùng giờ chung thì lưu 0 để sau này đổi giờ chung vẫn áp dụng
+        if ($startTs === (int)$row['session_start']) $startTs = 0;
+
+        db_query("UPDATE `exam_session_students` SET `start_ts` = ?, `duration_minutes` = ? WHERE `id` = ?", [$startTs, $duration, $row['id']]);
+        echo json_encode([
+            'status' => 'success',
+            'start_input' => $startTs > 0 ? date('Y-m-d\TH:i', $startTs) : '',
+            'duration_minutes' => $duration
+        ]);
+        exit;
+    }
+
+    if (($action === 'create_exam_session' || $action === 'update_exam_session') && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        require_once $rootDir . '/includes/exam_schema.php';
+        $id = (int)($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $exam_json = trim($_POST['exam_json'] ?? '');
+        $duration = (int)($_POST['duration_minutes'] ?? 45);
+        $start_ts = exam_parse_datetime($_POST['starts_at'] ?? '');
+
+        if (empty($name) || empty($exam_json)) {
+            echo json_encode(['status' => 'error', 'message' => 'Vui lòng nhập tên môn thi và chọn đề thi JSON']);
+            exit;
+        }
+        if (!$start_ts) {
+            echo json_encode(['status' => 'error', 'message' => 'Vui lòng nhập ngày giờ bắt đầu thi hợp lệ']);
+            exit;
+        }
+
+        $data = [
             'name' => $name,
-            'room' => $room,
+            'code' => trim($_POST['code'] ?? ''),
+            'batch_name' => trim($_POST['batch_name'] ?? '') ?: 'Đợt thi 1',
+            'school_year' => trim($_POST['school_year'] ?? ''),
+            'semester' => trim($_POST['semester'] ?? ''),
+            'exam_form' => trim($_POST['exam_form'] ?? '') ?: 'Trắc nghiệm',
+            'room' => trim($_POST['room'] ?? ''),
             'exam_json' => $exam_json,
             'duration_minutes' => $duration > 0 ? $duration : 45,
-            'starts_at' => $starts_at,
-            'ends_at' => $ends_at,
-            'is_active' => 1,
-            'created_at' => time()
-        ]);
+            'start_ts' => $start_ts,
+            'starts_at' => date('d/m/Y - H:i', $start_ts),
+        ];
 
-        echo json_encode(['status' => 'success', 'message' => 'Tạo đợt thi mới thành công']);
+        if ($action === 'update_exam_session') {
+            $old = db_fetch("SELECT id, start_ts FROM `exam_sessions` WHERE `id` = ?", [$id]);
+            if (!$old) {
+                echo json_encode(['status' => 'error', 'message' => 'Không tìm thấy ca thi']);
+                exit;
+            }
+            db_update('exam_sessions', $data, ['id' => $id]);
+
+            // Đổi giờ chung -> dời giờ riêng của từng sinh viên theo cùng khoảng, giữ nguyên độ trễ đã chỉnh cho từng người
+            $delta = $start_ts - (int)$old['start_ts'];
+            if ($delta !== 0 && (int)$old['start_ts'] > 0) {
+                db_query("UPDATE `exam_session_students` SET `start_ts` = `start_ts` + ? WHERE `exam_session_id` = ? AND `start_ts` > 0", [$delta, $id]);
+            }
+        } else {
+            $data['is_active'] = 1;
+            $data['created_at'] = time();
+            db_insert('exam_sessions', $data);
+            global $pdo;
+            $id = (int)$pdo->lastInsertId();
+        }
+
+        $students = exam_parse_student_codes($_POST['students'] ?? '');
+        exam_set_session_students($id, $students);
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => ($action === 'update_exam_session' ? 'Đã cập nhật ca thi' : 'Tạo ca thi mới thành công') . ' (' . count($students) . ' sinh viên được thi)'
+        ]);
         exit;
     }
 
@@ -376,6 +465,7 @@ try {
         $id = (int)($_POST['id'] ?? 0);
         db_delete('exam_sessions', ['id' => $id]);
         db_delete('exam_codes', ['exam_session_id' => $id]);
+        try { db_delete('exam_session_students', ['exam_session_id' => $id]); } catch (Exception $e) {}
         echo json_encode(['status' => 'success']);
         exit;
     }

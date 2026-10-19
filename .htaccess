@@ -1,6 +1,10 @@
 # .htaccess - Tối ưu và cấu hình Reverse Proxy & URL Rewriting cho AZDIGI (LiteSpeed / Apache)
 RewriteEngine On
 
+# 0. Website đang TẮT (Master Admin) -> chặn luôn kết nối chat /ws
+RewriteCond %{DOCUMENT_ROOT}/data/site_disabled.lock -f
+RewriteRule ^ws(/.*)?$ - [R=404,L]
+
 # 1. Chuyển tiếp kết nối /ws tới Node.js Server (cả WebSocket và HTTP Health Check)
 RewriteCond %{HTTP:Upgrade} =websocket [NC]
 RewriteRule ^ws/?(.*)$ ws://127.0.0.1:8085/$1 [P,L]
@@ -24,7 +28,7 @@ RewriteRule ^img/(.*)$ assets/img/$1 [L]
 RewriteRule ^font/(.*)$ assets/font/$1 [L]
 
 # 5. Bảo vệ các tệp cơ sở dữ liệu SQLite và cấu hình nhạy cảm
-<FilesMatch "(\.sqlite|\.sqlite3|\.db|\.env)$">
+<FilesMatch "(\.sqlite|\.sqlite3|\.db|\.env|\.log|\.lock|\.sh)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
